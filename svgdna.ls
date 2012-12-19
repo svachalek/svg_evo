@@ -17,12 +17,13 @@ labels = []
 randomX = -> Math.floor (Math.random! * 1.5 - 0.25) * imageWidth
 randomY = -> Math.floor (Math.random! * 1.5 - 0.25) * imageHeight
 randomByte = -> Math.floor Math.random! * 256
+randomColor = -> 'rgba(' + randomByte! + ',' + randomByte! + ',' + randomByte! + ',' + Math.random! + ')'
 
 class Painting
   (@shapes) -> @randomize! unless @shapes
 
   randomize: ->
-    @shapes = [new Shape() for p in [1 to imageShapes]]
+    @shapes = [randomShape() for p in [1 to imageShapes]]
     return this
 
   paint: !(canvas) ->
@@ -36,6 +37,8 @@ class Painting
 class Shape
   -> @randomize!
 
+class Triangle extends Shape
+
   randomize: !->
     @x0 = randomX!
     @y0 = randomY!
@@ -43,7 +46,7 @@ class Shape
     @y1 = randomY!
     @x2 = randomX!
     @y2 = randomY!
-    @fillStyle = 'rgba(' + randomByte! + ',' + randomByte! + ',' + randomByte! + ',' + Math.random! + ')'
+    @fillStyle = randomColor!
 
   paint: !(ctx) ->
     ctx.fillStyle = @fillStyle
@@ -53,6 +56,27 @@ class Shape
     ctx.lineTo @x2, @y2
     ctx.closePath!
     ctx.fill!
+
+class Circle extends Shape
+
+  randomize: !->
+    @x = randomX!
+    @y = randomY!
+    @r = Math.random! * imageHeight / 2
+    @fillStyle = randomColor!
+
+  paint: !(ctx) ->
+    ctx.fillStyle = @fillStyle
+    ctx.beginPath!
+    ctx.arc @x, @y, @r, 0 , 2 * Math.PI, false
+    ctx.closePath!
+    ctx.fill!
+
+randomShape = ->
+  if Math.random! < 0.5
+    new Triangle!
+  else
+    new Circle!
 
 targetData = null
 
@@ -73,6 +97,22 @@ diffScore = (canvas) ->
     ++x
   return score / bestPossibleScore
 
+findBestPossibleScore = ->
+  x = 0
+  while x < imageWidth
+    y = 0
+    while y < imageHeight
+      base = x * y * 4
+      r = targetData[base + 0]
+      g = targetData[base + 1]
+      b = targetData[base + 2]
+      dr = Math.max r, 255 - r
+      dg = Math.max g, 255 - g
+      db = Math.max b, 255 - b
+      bestPossibleScore += Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
+      ++y
+    ++x
+
 scoreAll = ->
   for i in [0 to generationSize - 1]
     paintings[i].score = score = diffScore canvases[i]
@@ -92,7 +132,7 @@ choose = (a, b) ->
       c[key] = flip(a, b)[key]
     return c
   else
-    return new Shape()
+    return randomShape()
 
 breed = !->
   ++generationNumber
@@ -107,11 +147,11 @@ breed = !->
   keep.push paintings[2]
   keep.push paintings[4]
   keep.push paintings[6]
+  keep.push paintings[8]
   keep.push paintings[10]
+  keep.push paintings[12]
   keep.push paintings[16]
-  keep.push paintings[22]
-  keep.push paintings[30]
-  keep.push paintings[40]
+  keep.push paintings[20]
   paintings := keep
   for i in [0 to generationKeep - 1]
     paintings[i].age = (paintings[i].age || 0) + 1
@@ -158,20 +198,7 @@ img.onload = ->
   ctx = target.getContext '2d'
   ctx.drawImage img, 0, 0, imageWidth, imageHeight
   targetData := (ctx.getImageData 0, 0, imageWidth, imageHeight).data
-  x = 0
-  while x < imageWidth
-    y = 0
-    while y < imageHeight
-      base = x * y * 4
-      r = targetData[base + 0]
-      g = targetData[base + 1]
-      b = targetData[base + 2]
-      dr = Math.max r, 255 - r
-      dg = Math.max g, 255 - g
-      db = Math.max b, 255 - b
-      bestPossibleScore += Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
-      ++y
-    ++x
+  bestPossibleScore = findBestPossibleScore!
   scoreAll!
   setTimeout breed, 0
 img.src = 'Lenna.png'
