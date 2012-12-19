@@ -1,5 +1,6 @@
 div.box {
   display:    inline-block;
+  font-size:  10px;
 }
 
 canvas {
@@ -13,3 +14,4 @@ p {
   margin:     0;
   text-align: center;
 }
+

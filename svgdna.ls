@@ -1,9 +1,12 @@
+startTime = Date.now!
+
 imageWidth = 100
 imageHeight = 100
 imagePolys = 50
 
 generationSize = 50
 generationKeep = 10
+generationNumber = 0
 
 polySets = []
 canvases = []
@@ -45,22 +48,22 @@ diffScore = (canvas) ->
     dg = Math.abs (data[base + 1] - targetData[base + 1]) / 255
     db = Math.abs (data[base + 2] - targetData[base + 2]) / 255
     score -= Math.sqrt dr * dr + dg * dg + db * db
-  return score
+  return Math.pow score / (imageWidth * imageHeight), 4
 
 scoreAll = ->
   for i in [0 to generationSize - 1]
     polySets[i].score = score = diffScore canvases[i]
-    labels[i].innerText = (Math.floor score / (imageWidth * imageHeight) * 100) + '%'
+    labels[i].innerText = (Math.floor score * 100) + '%'
 
 flip = (a, b) -> if Math.random! < 0.5 then a else b
 
 choose = (a, b) ->
   r = Math.random!
-  if r < 0.4
+  if r < 0.3
     return a
-  else if r < 0.8
+  else if r < 0.6
     return b
-  else if r < 0.9
+  else if r < 0.8
     c = {}
     for val, key of a
       c[key] = flip(a, b)[key]
@@ -73,11 +76,28 @@ cross = (mom, dad) ->
   return child
 
 breed = !->
+  ++generationNumber
+  elapsed = (Date.now! - startTime) / 1000
+  document.getElementById('generation').innerText = generationNumber
+  document.getElementById('time').innerText = Math.floor elapsed
+  document.getElementById('speed').innerText = Math.floor generationNumber / elapsed
   polySets.sort (a, b) -> b.score - a.score
-  polySets := polySets.slice(0, generationKeep)
+  keep = []
+  keep.push polySets[0]
+  keep.push polySets[1]
+  keep.push polySets[2]
+  keep.push polySets[4]
+  keep.push polySets[6]
+  keep.push polySets[10]
+  keep.push polySets[16]
+  keep.push polySets[22]
+  keep.push polySets[30]
+  keep.push polySets[40]
+  polySets := keep
   for i in [0 to generationKeep - 1]
+    polySets[i].age = (polySets[i].age || 0) + 1
     paintPoly canvases[i], polySets[i]
-    labels[i].innerText = (Math.floor polySets[i].score / (imageWidth * imageHeight) * 100) + '%'
+    labels[i].innerText = (Math.floor polySets[i].score * 100) + '% (' + polySets[i].age + ')'
   for i in [generationKeep to generationSize - 1]
     mom = polySets[Math.floor Math.random! * generationKeep]
     dad = polySets[Math.floor Math.random! * generationKeep]
@@ -88,7 +108,7 @@ breed = !->
     polySets.push child
     paintPoly canvases[i], child
     child.score = score = diffScore canvases[i]
-    labels[i].innerText = (Math.floor score / (imageWidth * imageHeight) * 100) + '%'
+    labels[i].innerText = (Math.floor score * 100) + '%'
   setTimeout breed, 0
 
 target = document.getElementById('target')
