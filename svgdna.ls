@@ -3,11 +3,12 @@ startTime = Date.now!
 imageWidth = 100
 imageHeight = 100
 imageShapes = 100
+imageRadius = (Math.sqrt imageWidth * imageWidth + imageHeight * imageHeight) / 2
 
-generationSize = 50
 generationKeep = 10
-generationMutate = (generationSize - generationKeep) / 2
-generationCross = generationSize - generationKeep - generationMutate
+generationMutate = 20
+generationCross = 20
+generationSize = generationKeep + generationMutate + generationCross
 generationNumber = 0
 
 bestPossibleScore = 0
@@ -16,9 +17,12 @@ paintings = []
 canvases = []
 labels = []
 
+lowWeightedRandom = -> Math.cos(Math.random! * Math.PI / 2)
+highWeightedRandom = -> Math.sin(Math.random! * Math.PI / 2)
+
 randomX = -> Math.floor (Math.random! * 1.5 - 0.25) * imageWidth
 randomY = -> Math.floor (Math.random! * 1.5 - 0.25) * imageHeight
-randomRadius = -> Math.floor Math.random! * imageHeight / 2
+randomRadius = -> Math.floor lowWeightedRandom! * imageRadius
 randomByte = -> Math.floor Math.random! * 256
 randomColor = -> 'rgba(' + randomByte! + ',' + randomByte! + ',' + randomByte! + ',' + Math.random! + ')'
 
@@ -26,7 +30,7 @@ class Painting
   (shapes, @origin) -> if shapes then @shapes = shapes.slice(0) else @randomize!
 
   randomize: ->
-    @shapes = [randomShape()]
+    @shapes = [randomShape!]
     @origin = 'R'
     return this
 
@@ -44,53 +48,54 @@ class Painting
       label += ' (' + @origin + @age + ')'
     labels[box].innerText = label
 
-  shuffle: !->
-    i = @shapes.length;
-    if i
-      while --i
-        j = Math.floor Math.random! * (i + 1)
-        tmp = @shapes[i]
-        @shapes[i] = @shapes[j]
-        @shapes[j] = tmp
-
   remove: !->
     if @shapes.length
-      i = Math.floor Math.random! * @shapes.length
+      # lean towards removing from the bottom
+      i = Math.floor lowWeightedRandom! * @shapes.length
       @shapes.splice i, 1
 
   add: !->
     if @shapes.length >= imageShapes then @shapes.splice 0, 1
-    i = Math.floor Math.random! * @shapes.length
-    @shapes.splice i, 0, randomShape()
+    # lean towards adding at the top
+    i = Math.floor highWeightedRandom! * @shapes.length
+    @shapes.splice i, 0, randomShape!
+
+  fork: !->
+    if @shapes.length >= imageShapes then @shapes.splice 0, 1
+    # lean towards adding at the top
+    i = Math.floor highWeightedRandom! * @shapes.length
+    @shapes.splice i, 0, @shapes[i].mutate!
 
   swap: !->
     if @shapes.length >= 2
-      i = Math.floor Math.random! * @shapes.length
-      j = Math.floor Math.random! * @shapes.length
+      # lean towards swapping at the top
+      i = Math.floor highWeightedRandom! * @shapes.length
+      j = Math.floor highWeightedRandom! * @shapes.length
       tmp = @shapes[i]
       @shapes[i] = @shapes[j]
       @shapes[j] = tmp
 
   mutateShape: !->
     if @shapes.length
-      i = Math.floor Math.random! * @shapes.length
+      # lean towards mutating at the top
+      i = Math.floor highWeightedRandom! * @shapes.length
       @shapes[i] = @shapes[i].mutate!
 
   mutate: ->
-    copy = new Painting @shapes
-    copy.origin = 'M'
+    child = new Painting @shapes
+    child.origin = 'M'
     roll = Math.random!
     if roll < 0.05
-      copy.shuffle!
+      child.add!
+    if roll < 0.10
+      child.fork!
     else if roll < 0.20
-      copy.remove!
-    else if roll < 0.35
-      copy.add!
-    else if roll < 0.50
-      copy.swap!
+      child.remove!
+    else if roll < 0.40
+      child.swap!
     else
-      copy.mutateShape!
-    return copy
+      child.mutateShape!
+    return child
 
   cross: (other) ->
     len = Math.min this.shapes.length, other.shapes.length
@@ -115,6 +120,7 @@ class Shape
 class Triangle extends Shape
 
   randomize: !->
+    @rotate = 0
     @x0 = randomX!
     @y0 = randomY!
     @x1 = randomX!
@@ -124,68 +130,106 @@ class Triangle extends Shape
     @fillStyle = randomColor!
 
   paint: !(ctx) ->
+    ctx.save!
     ctx.fillStyle = @fillStyle
+    ctx.rotate @rotate
     ctx.beginPath!
     ctx.moveTo @x0, @y0
     ctx.lineTo @x1, @y1
     ctx.lineTo @x2, @y2
     ctx.closePath!
     ctx.fill!
+    ctx.restore!
+
+  move: ->
+    r = randomRadius!
+    a = Math.random! * Math.PI * 2
+    dx = r * Math.cos a
+    dy = r * Math.sin a
+    @x0 += dx
+    @y0 += dy
+    @x1 += dx
+    @y1 += dy
+    @x2 += dx
+    @y2 += dy
+
+  copy: -> new Triangle this
 
   mutate: ->
     roll = Math.random!
-    copy = new Triangle this
+    child = @copy!
     if roll < 0.1
-      copy.x0 = randomX!
+      child.x0 = randomX!
     else if roll < 0.2
-      copy.y0 = randomY!
+      child.y0 = randomY!
     else if roll < 0.3
-      copy.x1 = randomX!
+      child.x1 = randomX!
     else if roll < 0.4
-      copy.y1 = randomY!
+      child.y1 = randomY!
     else if roll < 0.5
-      copy.x2 = randomX!
+      child.x2 = randomX!
     else if roll < 0.6
-      copy.y2 = randomY!
+      child.y2 = randomY!
+    else if roll < 0.7
+      child.rotate += (lowWeightedRandom! - 0.5) * 2 * Math.PI
+    else if roll < 0.8
+      child.move!
     else
-      copy.fillStyle = randomColor!
-    return copy
+      child.fillStyle = randomColor!
+    return child
 
-class Circle extends Shape
+class Oval extends Shape
 
   randomize: !->
+    @sx = @sy = 1
+    @rotate = 0
     @x = randomX!
     @y = randomY!
     @r = randomRadius!
     @fillStyle = randomColor!
 
   paint: !(ctx) ->
+    ctx.save!
     ctx.fillStyle = @fillStyle
+    ctx.rotate @rotate
+    ctx.scale @sx, @sy
     ctx.beginPath!
     ctx.arc @x, @y, @r, 0 , 2 * Math.PI, false
     ctx.closePath!
     ctx.fill!
+    ctx.restore!
+
+  move: ->
+    r = randomRadius!
+    a = Math.random! * Math.PI * 2
+    @x += r * Math.cos a
+    @y += r * Math.sin a
+
+  copy: -> new Oval this
 
   mutate: ->
     roll = Math.random!
-    copy = new Circle this
-    if roll < 0.2
-      copy.x = randomX!
-    else if roll < 0.4
-      copy.y = randomY!
-    else if roll < 0.6
-      copy.r = randomRadius!
+    child = @copy!
+    if roll < 0.10
+      child.rotate += (lowWeightedRandom! - 0.5) * 2 * Math.PI
+    else if roll < 0.20
+      child.sx += (Math.random! - 0.5) / 2
+    else if roll < 0.30
+      child.sy += (Math.random! - 0.5) / 2
+    else if roll < 0.60
+      child.move!
     else
-      copy.fillStyle = randomColor!
-    return copy
+      child.fillStyle = randomColor!
+    return child
 
 randomShape = ->
   if Math.random! < 0.5
     new Triangle!
   else
-    new Circle!
+    new Oval!
 
 targetData = null
+bestData = null
 
 diffScore = (canvas) ->
   ctx = canvas.getContext '2d'
