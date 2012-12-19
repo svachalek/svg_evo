@@ -122,15 +122,10 @@ flip = (a, b) -> if Math.random! < 0.5 then a else b
 
 choose = (a, b) ->
   r = Math.random!
-  if r < 0.3
+  if r < 0.45
     return a
-  else if r < 0.6
+  else if r < 0.90
     return b
-  else if r > 1
-    c = {}
-    for val, key of a
-      c[key] = flip(a, b)[key]
-    return c
   else
     return randomShape()
 
