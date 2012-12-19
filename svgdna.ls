@@ -2,7 +2,7 @@ startTime = Date.now!
 
 imageWidth = 100
 imageHeight = 100
-imageShapes = 25
+imageShapes = 100
 
 generationSize = 50
 generationKeep = 10
@@ -23,10 +23,11 @@ randomByte = -> Math.floor Math.random! * 256
 randomColor = -> 'rgba(' + randomByte! + ',' + randomByte! + ',' + randomByte! + ',' + Math.random! + ')'
 
 class Painting
-  (shapes) -> if shapes then @shapes = shapes.slice(0) else @randomize!
+  (shapes, @origin) -> if shapes then @shapes = shapes.slice(0) else @randomize!
 
   randomize: ->
     @shapes = [randomShape()]
+    @origin = 'R'
     return this
 
   paint: !(canvas) ->
@@ -40,7 +41,7 @@ class Painting
     unless @score then @score = diffScore canvases[box]
     label = (Math.floor @score * 100) + '% [' + @shapes.length + ']'
     if @age
-      label += ' (' + @age + ')'
+      label += ' (' + @origin + @age + ')'
     labels[box].innerText = label
 
   shuffle: !->
@@ -77,6 +78,7 @@ class Painting
 
   mutate: ->
     copy = new Painting @shapes
+    copy.origin = 'M'
     roll = Math.random!
     if roll < 0.05
       copy.shuffle!
@@ -100,7 +102,7 @@ class Painting
       else
         shapes.push other.shapes[i]
       ++i
-    return new Painting shapes
+    new Painting shapes, 'C'
 
 class Shape
   (source) ->
@@ -256,32 +258,32 @@ breed = !->
     child.show paintings.length - 1
   setTimeout breed, 0
 
-target = document.getElementById('target')
-target.width = imageWidth
-target.height = imageHeight
-
-for i in [0 to generationSize - 1]
-  canvas = canvases[i] = document.createElement 'canvas'
-  canvas.width = imageWidth
-  canvas.height = imageHeight
-  div = document.createElement 'div'
-  label = labels[i] = document.createElement 'p'
-  label.innerText = i.toString!
-  div.className = 'box'
-  div.appendChild canvas
-  div.appendChild label
-  document.body.appendChild div
-
-img = new Image!
-img.onload = ->
-  ctx = target.getContext '2d'
-  ctx.drawImage img, 0, 0, imageWidth, imageHeight
-  targetData := (ctx.getImageData 0, 0, imageWidth, imageHeight).data
-  bestPossibleScore = findBestPossibleScore!
+window.addEventListener 'load', ->
+  target = document.getElementById('target')
+  target.width = imageWidth
+  target.height = imageHeight
   for i in [0 to generationSize - 1]
-    painting = new Painting()
-    paintings.push painting
-    painting.show i
-  setTimeout breed, 0
-img.src = 'Lenna.png'
+    canvas = canvases[i] = document.createElement 'canvas'
+    canvas.width = imageWidth
+    canvas.height = imageHeight
+    div = document.createElement 'div'
+    label = labels[i] = document.createElement 'p'
+    label.innerText = i.toString!
+    div.className = 'box'
+    div.appendChild canvas
+    div.appendChild label
+    document.body.appendChild div
+
+  img = new Image!
+  img.onload = ->
+    ctx = target.getContext '2d'
+    ctx.drawImage img, 0, 0, imageWidth, imageHeight
+    targetData := (ctx.getImageData 0, 0, imageWidth, imageHeight).data
+    bestPossibleScore = findBestPossibleScore!
+    for i in [0 to generationSize - 1]
+      painting = new Painting()
+      paintings.push painting
+      painting.show i
+    setTimeout breed, 0
+  img.src = 'Lenna.png'
 
