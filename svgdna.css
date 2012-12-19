@@ -6,7 +6,7 @@ div.box {
 canvas {
   width:      100px; 
   height:     100px;
-  border:     2px inset #999;
+  border:     4px inset #999;
   margin:     4px;
 }
 

@@ -2,10 +2,12 @@ startTime = Date.now!
 
 imageWidth = 100
 imageHeight = 100
-imageShapes = 50
+imageShapes = 25
 
 generationSize = 50
 generationKeep = 10
+generationMutate = (generationSize - generationKeep) / 2
+generationCross = generationSize - generationKeep - generationMutate
 generationNumber = 0
 
 bestPossibleScore = 0
@@ -16,14 +18,15 @@ labels = []
 
 randomX = -> Math.floor (Math.random! * 1.5 - 0.25) * imageWidth
 randomY = -> Math.floor (Math.random! * 1.5 - 0.25) * imageHeight
+randomRadius = -> Math.floor Math.random! * imageHeight / 2
 randomByte = -> Math.floor Math.random! * 256
 randomColor = -> 'rgba(' + randomByte! + ',' + randomByte! + ',' + randomByte! + ',' + Math.random! + ')'
 
 class Painting
-  (@shapes) -> @randomize! unless @shapes
+  (shapes) -> if shapes then @shapes = shapes.slice(0) else @randomize!
 
   randomize: ->
-    @shapes = [randomShape() for p in [1 to imageShapes]]
+    @shapes = [randomShape()]
     return this
 
   paint: !(canvas) ->
@@ -32,10 +35,80 @@ class Painting
     for shape in @shapes
       shape.paint ctx
 
-  cross: (other) -> new Painting [choose(this.shapes[i], other.shapes[i]) for i in [0 to imageShapes - 1]]
+  show: (box) ->
+    @paint canvases[box]
+    unless @score then @score = diffScore canvases[box]
+    label = (Math.floor @score * 100) + '% [' + @shapes.length + ']'
+    if @age
+      label += ' (' + @age + ')'
+    labels[box].innerText = label
+
+  shuffle: !->
+    i = @shapes.length;
+    if i
+      while --i
+        j = Math.floor Math.random! * (i + 1)
+        tmp = @shapes[i]
+        @shapes[i] = @shapes[j]
+        @shapes[j] = tmp
+
+  remove: !->
+    if @shapes.length
+      i = Math.floor Math.random! * @shapes.length
+      @shapes.splice i, 1
+
+  add: !->
+    if @shapes.length >= imageShapes then @shapes.splice 0, 1
+    i = Math.floor Math.random! * @shapes.length
+    @shapes.splice i, 0, randomShape()
+
+  swap: !->
+    if @shapes.length >= 2
+      i = Math.floor Math.random! * @shapes.length
+      j = Math.floor Math.random! * @shapes.length
+      tmp = @shapes[i]
+      @shapes[i] = @shapes[j]
+      @shapes[j] = tmp
+
+  mutateShape: !->
+    if @shapes.length
+      i = Math.floor Math.random! * @shapes.length
+      @shapes[i] = @shapes[i].mutate!
+
+  mutate: ->
+    copy = new Painting @shapes
+    roll = Math.random!
+    if roll < 0.10
+      copy.shuffle!
+    else if roll < 0.30
+      copy.remove!
+    else if roll < 0.50
+      copy.add!
+    else if roll < 0.70
+      copy.swap!
+    else
+      copy.mutateShape!
+    return copy
+
+  cross: (other) ->
+    len = Math.min this.shapes.length, other.shapes.length
+    i = 0
+    shapes = []
+    while i < len
+      if Math.random! < 0.5
+        shapes.push this.shapes[i]
+      else
+        shapes.push other.shapes[i]
+      ++i
+    return new Painting shapes
 
 class Shape
-  -> @randomize!
+  (source) ->
+    if source
+      for key, val of source
+        this[key] = val
+    else
+      @randomize!
 
 class Triangle extends Shape
 
@@ -57,12 +130,31 @@ class Triangle extends Shape
     ctx.closePath!
     ctx.fill!
 
+  mutate: ->
+    roll = Math.random!
+    copy = new Triangle this
+    if roll < 0.1
+      copy.x0 = randomX!
+    else if roll < 0.2
+      copy.y0 = randomY!
+    else if roll < 0.3
+      copy.x1 = randomX!
+    else if roll < 0.4
+      copy.y1 = randomY!
+    else if roll < 0.5
+      copy.x2 = randomX!
+    else if roll < 0.6
+      copy.y2 = randomY!
+    else
+      copy.fillStyle = randomColor!
+    return copy
+
 class Circle extends Shape
 
   randomize: !->
     @x = randomX!
     @y = randomY!
-    @r = Math.random! * imageHeight / 2
+    @r = randomRadius!
     @fillStyle = randomColor!
 
   paint: !(ctx) ->
@@ -71,6 +163,19 @@ class Circle extends Shape
     ctx.arc @x, @y, @r, 0 , 2 * Math.PI, false
     ctx.closePath!
     ctx.fill!
+
+  mutate: ->
+    roll = Math.random!
+    copy = new Circle this
+    if roll < 0.2
+      copy.x = randomX!
+    else if roll < 0.4
+      copy.y = randomY!
+    else if roll < 0.6
+      copy.r = randomRadius!
+    else
+      copy.fillStyle = randomColor!
+    return copy
 
 randomShape = ->
   if Math.random! < 0.5
@@ -121,13 +226,15 @@ scoreAll = ->
 flip = (a, b) -> if Math.random! < 0.5 then a else b
 
 choose = (a, b) ->
-  r = Math.random!
-  if r < 0.45
-    return a
-  else if r < 0.90
-    return b
+  roll = Math.random!
+  if roll < 0.45
+    a
+  else if roll < 0.90
+    b
+  else if roll < 0.95
+    a.mutate!
   else
-    return randomShape()
+    b.mutate!
 
 breed = !->
   ++generationNumber
@@ -140,19 +247,23 @@ breed = !->
   keep.push paintings[0]
   keep.push paintings[1]
   keep.push paintings[2]
-  keep.push paintings[4]
-  keep.push paintings[6]
-  keep.push paintings[8]
+  keep.push paintings[3]
+  keep.push paintings[5]
+  keep.push paintings[7]
   keep.push paintings[10]
-  keep.push paintings[12]
-  keep.push paintings[16]
-  keep.push paintings[20]
+  keep.push paintings[13]
+  keep.push paintings[17]
+  keep.push paintings[21]
   paintings := keep
   for i in [0 to generationKeep - 1]
     paintings[i].age = (paintings[i].age || 0) + 1
-    paintings[i].paint canvases[i]
-    labels[i].innerText = (Math.floor paintings[i].score * 100) + '% (' + paintings[i].age + ')'
-  for i in [generationKeep to generationSize - 1]
+    paintings[i].show i
+  for i in [0 to generationMutate - 1]
+    mom = paintings[Math.floor Math.random! * generationKeep]
+    child = mom.mutate!
+    paintings.push child
+    child.show paintings.length - 1
+  for i in [0 to generationCross - 1]
     mom = paintings[Math.floor Math.random! * generationKeep]
     dad = paintings[Math.floor Math.random! * generationKeep]
     while mom == dad
@@ -160,9 +271,7 @@ breed = !->
       dad = paintings[Math.floor Math.random! * generationKeep]
     child = mom.cross dad
     paintings.push child
-    child.paint canvases[i]
-    child.score = score = diffScore canvases[i]
-    labels[i].innerText = (Math.floor score * 100) + '%'
+    child.show paintings.length - 1
   setTimeout breed, 0
 
 target = document.getElementById('target')
