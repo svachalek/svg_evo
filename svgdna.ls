@@ -2,37 +2,53 @@ startTime = Date.now!
 
 imageWidth = 100
 imageHeight = 100
-imagePolys = 50
+imageShapes = 50
 
 generationSize = 50
 generationKeep = 10
 generationNumber = 0
 
-polySets = []
+paintings = []
 canvases = []
 labels = []
 
-randomPoly = ->
-  x0: Math.floor (Math.random! * 1.5 - 0.25) * imageWidth
-  y0: Math.floor (Math.random! * 1.5 - 0.25) * imageHeight
-  x1: Math.floor (Math.random! * 1.5 - 0.25) * imageWidth
-  y1: Math.floor (Math.random! * 1.5 - 0.25) * imageHeight
-  x2: Math.floor (Math.random! * 1.5 - 0.25) * imageWidth
-  y2: Math.floor (Math.random! * 1.5 - 0.25) * imageHeight
-  r:  Math.floor Math.random! * 255
-  g:  Math.floor Math.random! * 255
-  b:  Math.floor Math.random! * 255
-  a:  Math.random!
+randomX = -> Math.floor (Math.random! * 1.5 - 0.25) * imageWidth
+randomY = -> Math.floor (Math.random! * 1.5 - 0.25) * imageHeight
+randomByte = -> Math.floor Math.random! * 256
 
-paintPoly = (canvas, polySet) ->
-  ctx = canvas.getContext '2d'
-  ctx.clearRect 0, 0, imageWidth, imageHeight
-  for poly in polySet
-    ctx.fillStyle = 'rgba(' + poly.r + ',' + poly.g + ',' + poly.b + ',' + poly.a + ')'
+class Painting
+  (@shapes) -> @randomize! unless @shapes
+
+  randomize: ->
+    @shapes = [new Shape() for p in [1 to imageShapes]]
+    return this
+
+  paint: !(canvas) ->
+    ctx = canvas.getContext '2d'
+    ctx.clearRect 0, 0, imageWidth, imageHeight
+    for shape in @shapes
+      shape.paint ctx
+
+  cross: (other) -> new Painting [choose(this.shapes[i], other.shapes[i]) for i in [0 to imageShapes - 1]]
+
+class Shape
+  -> @randomize!
+
+  randomize: !->
+    @x0 = randomX!
+    @y0 = randomY!
+    @x1 = randomX!
+    @y1 = randomY!
+    @x2 = randomX!
+    @y2 = randomY!
+    @fillStyle = 'rgba(' + randomByte! + ',' + randomByte! + ',' + randomByte! + ',' + Math.random! + ')'
+
+  paint: !(ctx) ->
+    ctx.fillStyle = @fillStyle
     ctx.beginPath!
-    ctx.moveTo poly.x0, poly.y0
-    ctx.lineTo poly.x1, poly.y1
-    ctx.lineTo poly.x2, poly.y2
+    ctx.moveTo @x0, @y0
+    ctx.lineTo @x1, @y1
+    ctx.lineTo @x2, @y2
     ctx.closePath!
     ctx.fill!
 
@@ -52,7 +68,7 @@ diffScore = (canvas) ->
 
 scoreAll = ->
   for i in [0 to generationSize - 1]
-    polySets[i].score = score = diffScore canvases[i]
+    paintings[i].score = score = diffScore canvases[i]
     labels[i].innerText = (Math.floor score * 100) + '%'
 
 flip = (a, b) -> if Math.random! < 0.5 then a else b
@@ -63,17 +79,13 @@ choose = (a, b) ->
     return a
   else if r < 0.6
     return b
-  else if r < 0.8
+  else if r > 1
     c = {}
     for val, key of a
       c[key] = flip(a, b)[key]
     return c
   else
-    return randomPoly!
-
-cross = (mom, dad) ->
-  child = [choose(mom[i], dad[i]) for i in [0 to imagePolys - 1]]
-  return child
+    return new Shape()
 
 breed = !->
   ++generationNumber
@@ -81,32 +93,32 @@ breed = !->
   document.getElementById('generation').innerText = generationNumber
   document.getElementById('time').innerText = Math.floor elapsed
   document.getElementById('speed').innerText = Math.floor generationNumber / elapsed
-  polySets.sort (a, b) -> b.score - a.score
+  paintings.sort (a, b) -> b.score - a.score
   keep = []
-  keep.push polySets[0]
-  keep.push polySets[1]
-  keep.push polySets[2]
-  keep.push polySets[4]
-  keep.push polySets[6]
-  keep.push polySets[10]
-  keep.push polySets[16]
-  keep.push polySets[22]
-  keep.push polySets[30]
-  keep.push polySets[40]
-  polySets := keep
+  keep.push paintings[0]
+  keep.push paintings[1]
+  keep.push paintings[2]
+  keep.push paintings[4]
+  keep.push paintings[6]
+  keep.push paintings[10]
+  keep.push paintings[16]
+  keep.push paintings[22]
+  keep.push paintings[30]
+  keep.push paintings[40]
+  paintings := keep
   for i in [0 to generationKeep - 1]
-    polySets[i].age = (polySets[i].age || 0) + 1
-    paintPoly canvases[i], polySets[i]
-    labels[i].innerText = (Math.floor polySets[i].score * 100) + '% (' + polySets[i].age + ')'
+    paintings[i].age = (paintings[i].age || 0) + 1
+    paintings[i].paint canvases[i]
+    labels[i].innerText = (Math.floor paintings[i].score * 100) + '% (' + paintings[i].age + ')'
   for i in [generationKeep to generationSize - 1]
-    mom = polySets[Math.floor Math.random! * generationKeep]
-    dad = polySets[Math.floor Math.random! * generationKeep]
+    mom = paintings[Math.floor Math.random! * generationKeep]
+    dad = paintings[Math.floor Math.random! * generationKeep]
     while mom == dad
-      mom = polySets[Math.floor Math.random! * generationKeep]
-      dad = polySets[Math.floor Math.random! * generationKeep]
-    child = cross mom, dad
-    polySets.push child
-    paintPoly canvases[i], child
+      mom = paintings[Math.floor Math.random! * generationKeep]
+      dad = paintings[Math.floor Math.random! * generationKeep]
+    child = mom.cross dad
+    paintings.push child
+    child.paint canvases[i]
     child.score = score = diffScore canvases[i]
     labels[i].innerText = (Math.floor score * 100) + '%'
   setTimeout breed, 0
@@ -128,12 +140,11 @@ for i in [0 to generationSize - 1]
   document.body.appendChild div
 
 for i in [0 to generationSize - 1]
-  polySet = [randomPoly! for p in [1 to imagePolys]]
-  polySets.push polySet
+  paintings.push new Painting()
 
-polySets.sort (a, b) -> b.score - a.score
+paintings.sort (a, b) -> b.score - a.score
 for i in [0 to generationSize - 1]
-  paintPoly canvases[i], polySets[i]
+  paintings[i].paint canvases[i]
 
 img = new Image!
 img.onload = ->
