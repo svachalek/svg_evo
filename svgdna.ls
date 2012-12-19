@@ -8,6 +8,8 @@ generationSize = 50
 generationKeep = 10
 generationNumber = 0
 
+bestPossibleScore = 0
+
 paintings = []
 canvases = []
 labels = []
@@ -56,15 +58,20 @@ targetData = null
 
 diffScore = (canvas) ->
   ctx = canvas.getContext '2d'
-  score = imageWidth * imageHeight
+  score = bestPossibleScore
   data = (ctx.getImageData 0, 0, imageWidth, imageHeight).data
-  for i in [0 to (imageWidth * imageHeight) - 1]
-    base = i * 4
-    dr = Math.abs (data[base + 0] - targetData[base + 0]) / 255
-    dg = Math.abs (data[base + 1] - targetData[base + 1]) / 255
-    db = Math.abs (data[base + 2] - targetData[base + 2]) / 255
-    score -= Math.sqrt dr * dr + dg * dg + db * db
-  return Math.pow score / (imageWidth * imageHeight), 4
+  x = 0
+  while x < imageWidth
+    y = 0
+    while y < imageHeight
+      base = x * y * 4
+      dr = data[base + 0] - targetData[base + 0]
+      dg = data[base + 1] - targetData[base + 1]
+      db = data[base + 2] - targetData[base + 2]
+      score -= Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
+      ++y
+    ++x
+  return score / bestPossibleScore
 
 scoreAll = ->
   for i in [0 to generationSize - 1]
@@ -151,6 +158,20 @@ img.onload = ->
   ctx = target.getContext '2d'
   ctx.drawImage img, 0, 0, imageWidth, imageHeight
   targetData := (ctx.getImageData 0, 0, imageWidth, imageHeight).data
+  x = 0
+  while x < imageWidth
+    y = 0
+    while y < imageHeight
+      base = x * y * 4
+      r = targetData[base + 0]
+      g = targetData[base + 1]
+      b = targetData[base + 2]
+      dr = Math.max r, 255 - r
+      dg = Math.max g, 255 - g
+      db = Math.max b, 255 - b
+      bestPossibleScore += Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
+      ++y
+    ++x
   scoreAll!
   setTimeout breed, 0
 img.src = 'Lenna.png'
