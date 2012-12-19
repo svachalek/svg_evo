@@ -78,13 +78,13 @@ class Painting
   mutate: ->
     copy = new Painting @shapes
     roll = Math.random!
-    if roll < 0.10
+    if roll < 0.05
       copy.shuffle!
-    else if roll < 0.30
+    else if roll < 0.20
       copy.remove!
-    else if roll < 0.50
+    else if roll < 0.35
       copy.add!
-    else if roll < 0.70
+    else if roll < 0.50
       copy.swap!
     else
       copy.mutateShape!
@@ -218,24 +218,6 @@ findBestPossibleScore = ->
       ++y
     ++x
 
-scoreAll = ->
-  for i in [0 to generationSize - 1]
-    paintings[i].score = score = diffScore canvases[i]
-    labels[i].innerText = (Math.floor score * 100) + '%'
-
-flip = (a, b) -> if Math.random! < 0.5 then a else b
-
-choose = (a, b) ->
-  roll = Math.random!
-  if roll < 0.45
-    a
-  else if roll < 0.90
-    b
-  else if roll < 0.95
-    a.mutate!
-  else
-    b.mutate!
-
 breed = !->
   ++generationNumber
   elapsed = (Date.now! - startTime) / 1000
@@ -290,20 +272,16 @@ for i in [0 to generationSize - 1]
   div.appendChild label
   document.body.appendChild div
 
-for i in [0 to generationSize - 1]
-  paintings.push new Painting()
-
-paintings.sort (a, b) -> b.score - a.score
-for i in [0 to generationSize - 1]
-  paintings[i].paint canvases[i]
-
 img = new Image!
 img.onload = ->
   ctx = target.getContext '2d'
   ctx.drawImage img, 0, 0, imageWidth, imageHeight
   targetData := (ctx.getImageData 0, 0, imageWidth, imageHeight).data
   bestPossibleScore = findBestPossibleScore!
-  scoreAll!
+  for i in [0 to generationSize - 1]
+    painting = new Painting()
+    paintings.push painting
+    painting.show i
   setTimeout breed, 0
 img.src = 'Lenna.png'
 
