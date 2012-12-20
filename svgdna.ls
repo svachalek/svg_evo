@@ -11,8 +11,6 @@ generationCross = 20
 generationSize = generationKeep + generationMutate + generationCross
 generationNumber = 0
 
-bestPossibleScore = 0
-
 paintings = []
 canvases = []
 labels = []
@@ -83,11 +81,29 @@ class Painting
 
   show: (box) ->
     @paint canvases[box]
-    unless @score then @score = diffScore canvases[box]
+    unless @score then @diffScore canvases[box]
     label = (Math.floor @score * 100) + '% ' + @gender + '[' + @shapes.length + ']'
     if @age
       label += ' (' + @origin + @age + ')'
     labels[box].innerText = label
+
+  diffScore: (canvas) ->
+    ctx = canvas.getContext '2d'
+    score = 0
+    data = (ctx.getImageData 0, 0, imageWidth, imageHeight).data
+    x = 0
+    while x < imageWidth
+      y = 0
+      while y < imageHeight
+        base = x * y * 4
+        dr = data[base + 0] - targetData[base + 0]
+        dg = data[base + 1] - targetData[base + 1]
+        db = data[base + 2] - targetData[base + 2]
+        score += Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
+        ++y
+      ++x
+    @score = score / (imageHeight * imageWidth)
+    @gender = 'N'
 
   remove: !->
     if @shapes.length
@@ -241,46 +257,13 @@ randomShape = ->
 targetData = null
 bestData = null
 
-diffScore = (canvas) ->
-  ctx = canvas.getContext '2d'
-  score = bestPossibleScore
-  data = (ctx.getImageData 0, 0, imageWidth, imageHeight).data
-  x = 0
-  while x < imageWidth
-    y = 0
-    while y < imageHeight
-      base = x * y * 4
-      dr = data[base + 0] - targetData[base + 0]
-      dg = data[base + 1] - targetData[base + 1]
-      db = data[base + 2] - targetData[base + 2]
-      score -= Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
-      ++y
-    ++x
-  return score / bestPossibleScore
-
-findBestPossibleScore = ->
-  x = 0
-  while x < imageWidth
-    y = 0
-    while y < imageHeight
-      base = x * y * 4
-      r = targetData[base + 0]
-      g = targetData[base + 1]
-      b = targetData[base + 2]
-      dr = Math.max r, 255 - r
-      dg = Math.max g, 255 - g
-      db = Math.max b, 255 - b
-      bestPossibleScore += Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
-      ++y
-    ++x
-
 breed = !->
   ++generationNumber
   elapsed = (Date.now! - startTime) / 1000
   document.getElementById('generation').innerText = generationNumber
   document.getElementById('time').innerText = Math.floor elapsed
   document.getElementById('speed').innerText = Math.floor generationNumber / elapsed
-  paintings.sort (a, b) -> (b.score - a.score) || (a.shapes.length - b.shapes.length)
+  paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
   keep = []
   keep.push paintings[0]
   keep.push paintings[1]
@@ -334,7 +317,6 @@ window.addEventListener 'load', ->
     ctx = target.getContext '2d'
     ctx.drawImage img, 0, 0, imageWidth, imageHeight
     targetData := (ctx.getImageData 0, 0, imageWidth, imageHeight).data
-    bestPossibleScore = findBestPossibleScore!
     for i in [0 to generationSize - 1]
       painting = new Painting()
       paintings.push painting
