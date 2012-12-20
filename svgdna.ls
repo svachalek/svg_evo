@@ -352,22 +352,24 @@ restart = ->
     painting.show i
   setTimeout breed, 0
 
+createBox = ->
+  canvas = document.createElement 'canvas'
+  canvas.width = imageWidth
+  canvas.height = imageHeight
+  box = document.createElement 'div'
+  label = document.createElement 'p'
+  box.className = 'box'
+  box.appendChild canvas
+  box.appendChild label
+  return box
+
 window.addEventListener 'load', ->
   boxesElement = document.getElementById('boxes')
   target = document.getElementById('target')
   target.width = imageWidth
   target.height = imageHeight
   for i in [0 to generationSize - 1]
-    canvas = document.createElement 'canvas'
-    canvas.width = imageWidth
-    canvas.height = imageHeight
-    box = boxes[i] = document.createElement 'div'
-    label = document.createElement 'p'
-    label.innerText = i.toString!
-    box.className = 'box'
-    box.appendChild canvas
-    box.appendChild label
-    boxesElement.appendChild box
+    boxesElement.appendChild boxes[i] = createBox!
 
   img = new Image!
   img.onload = ->
