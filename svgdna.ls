@@ -20,7 +20,7 @@ highWeightedRandom = -> Math.sin(Math.random! * Math.PI / 2)
 
 randomX = -> Math.floor (Math.random! * 1.5 - 0.25) * imageWidth
 randomY = -> Math.floor (Math.random! * 1.5 - 0.25) * imageHeight
-randomRadius = -> Math.floor lowWeightedRandom! * imageRadius
+randomRadius = -> Math.floor lowWeightedRandom! * imageRadius / 2
 randomByte = -> Math.floor Math.random! * 256
 clamp = (min, n, max) -> if n < min then min else if n > max then max else n
 
@@ -139,16 +139,16 @@ class Painting
   mutate: ->
     child = new Painting @shapes
     roll = Math.random!
-    if roll < 0.01
+    if roll < 0.10
       child.origin = 'MA'
       child.add!
-    else if roll < 0.03
+    else if roll < 0.20
       child.origin = 'MR'
       child.remove!
-    else if roll < 0.07
+    else if roll < 0.30
       child.origin = 'MS'
       child.swap!
-    else if roll < 0.20
+    else if roll < 0.40
       child.origin = 'MF'
       child.fork!
     else
@@ -181,8 +181,8 @@ class Triangle extends Shape
   randomize: !->
     @rotate = 0
     @p0 = new Point!
-    @p1 = new Point!
-    @p2 = new Point!
+    @p1 = @p0.mutate!
+    @p2 = @p0.mutate!
     @color = new Color!
 
   paint: !(ctx) ->
@@ -252,7 +252,7 @@ class Oval extends Shape
     return child
 
 randomShape = ->
-  if Math.random! < 0.5
+  if Math.random! < 0.8
     new Triangle!
   else
     new Oval!
