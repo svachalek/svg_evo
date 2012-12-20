@@ -26,6 +26,14 @@ clamp = (min, n, max) -> if n < min then min else if n > max then max else n
 
 setText = (element, text) -> element.innerText = element.textContent = text
 
+diffPoint = (d1, x1, y1, d2, x2, y2) ->
+  b1 = (x1 + (y1 * imageWidth)) * 4
+  b2 = (x2 + (y2 * imageWidth)) * 4
+  dr = d1[b1++] - d2[b2++]
+  dg = d1[b1++] - d2[b2++]
+  db = d1[b1++] - d2[b2++]
+  Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
+
 class Point
   (@x, @y) -> unless x? then @randomize!
 
@@ -97,11 +105,7 @@ class Painting
     while y < imageHeight
       x = 0
       while x < imageWidth
-        base = (x + (y * imageWidth)) * 4
-        dr = data[base + 0] - targetData[base + 0]
-        dg = data[base + 1] - targetData[base + 1]
-        db = data[base + 2] - targetData[base + 2]
-        score += Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
+        score += (diffPoint data, x, y, targetData, x, y) * weightMap[x + (y * imageWidth)]
         ++x
       ++y
     @score = score / (imageHeight * imageWidth)
@@ -297,6 +301,48 @@ breed = !->
   setText document.getElementById('speed'), Math.floor generationNumber / (cumulativeTime / 1000)
   setTimeout breed, 0
 
+weightMap = null
+
+generateWeightMap = ->
+  weightMap := []
+  y = 0
+  while y < imageHeight
+    x = 0
+    while x < imageWidth
+      u = Math.max y - 1, 0
+      l = Math.max x - 1, 0
+      r = Math.min x + 1, imageWidth - 1
+      d = Math.min y + 1, imageHeight - 1
+      weight = (
+        diffPoint(targetData, x, y, targetData, l, u) +
+        diffPoint(targetData, x, y, targetData, x, u) +
+        diffPoint(targetData, x, y, targetData, r, u) +
+        diffPoint(targetData, x, y, targetData, l, y) +
+        diffPoint(targetData, x, y, targetData, r, y) +
+        diffPoint(targetData, x, y, targetData, l, d) +
+        diffPoint(targetData, x, y, targetData, x, d) +
+        diffPoint(targetData, x, y, targetData, r, d))
+      weightMap.push clamp(0.05, weight / 4, 1)
+      ++x
+    ++y
+  paintWeightMap!
+
+paintWeightMap = ->
+  weights = document.getElementById('weights')
+  weights.width = imageWidth
+  weights.height = imageWidth
+  ctx = weights.getContext '2d'
+  imageData = ctx.createImageData(imageWidth, imageHeight)
+  data = imageData.data
+  i = 0
+  for weight in weightMap
+    color = Math.floor (1 - weight) * 255
+    data[i++] = color # r
+    data[i++] = color # g
+    data[i++] = color # b
+    data[i++] = 255   # a
+  ctx.putImageData imageData, 0, 0
+
 restart = ->
   paintings := []
   for i in [0 to generationSize - 1]
@@ -327,6 +373,7 @@ window.addEventListener 'load', ->
     ctx = target.getContext '2d'
     ctx.drawImage img, 0, 0, imageWidth, imageHeight
     targetData := (ctx.getImageData 0, 0, imageWidth, imageHeight).data
+    generateWeightMap!
     restart!
   img.src = 'Lenna.png'
 
