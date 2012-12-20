@@ -24,7 +24,33 @@ randomX = -> Math.floor (Math.random! * 1.5 - 0.25) * imageWidth
 randomY = -> Math.floor (Math.random! * 1.5 - 0.25) * imageHeight
 randomRadius = -> Math.floor lowWeightedRandom! * imageRadius
 randomByte = -> Math.floor Math.random! * 256
-randomColor = -> 'rgba(' + randomByte! + ',' + randomByte! + ',' + randomByte! + ',' + Math.random! + ')'
+clamp = (min, n, max) -> if n < min then min else if n > max then max else n
+
+class Color
+
+  (@r, @g, @b, @a) -> unless @r? then @randomize!
+
+  randomize: ->
+    @r = randomByte!
+    @g = randomByte!
+    @b = randomByte!
+    @a = Math.random!
+    return this
+
+  fillStyle: -> 'rgba(' + @r + ',' + @g + ',' + @b + ',' + @a + ')'
+
+  mutate: ->
+    child = new Color @r, @g, @b, @a
+    roll = Math.random!
+    if roll < 0.25
+      child.r = clamp(0, @r + Math.random! * 10 - 5, 255)
+    else if roll < 0.50
+      child.r = clamp(0, @g + Math.random! * 10 - 5, 255)
+    else if roll < 0.75
+      child.r = clamp(0, @b + Math.random! * 10 - 5, 255)
+    else
+      child.a = clamp(0, @a + Math.random! / 10 - 0.05, 1)
+    return child
 
 class Painting
   (shapes, @origin) -> if shapes then @shapes = shapes.slice(0) else @randomize!
@@ -91,7 +117,7 @@ class Painting
       child.fork!
     else if roll < 0.20
       child.remove!
-    else if roll < 0.40
+    else if roll < 0.30
       child.swap!
     else
       child.mutateShape!
@@ -127,11 +153,11 @@ class Triangle extends Shape
     @y1 = randomY!
     @x2 = randomX!
     @y2 = randomY!
-    @fillStyle = randomColor!
+    @color = new Color!
 
   paint: !(ctx) ->
     ctx.save!
-    ctx.fillStyle = @fillStyle
+    ctx.fillStyle = @color.fillStyle!
     ctx.rotate @rotate
     ctx.beginPath!
     ctx.moveTo @x0, @y0
@@ -175,7 +201,7 @@ class Triangle extends Shape
     else if roll < 0.8
       child.move!
     else
-      child.fillStyle = randomColor!
+      child.color = @color.mutate!
     return child
 
 class Oval extends Shape
@@ -186,11 +212,11 @@ class Oval extends Shape
     @x = randomX!
     @y = randomY!
     @r = randomRadius!
-    @fillStyle = randomColor!
+    @color = new Color!
 
   paint: !(ctx) ->
     ctx.save!
-    ctx.fillStyle = @fillStyle
+    ctx.fillStyle = @color.fillStyle!
     ctx.rotate @rotate
     ctx.scale @sx, @sy
     ctx.beginPath!
@@ -219,7 +245,7 @@ class Oval extends Shape
     else if roll < 0.60
       child.move!
     else
-      child.fillStyle = randomColor!
+      child.color = @color.mutate!
     return child
 
 randomShape = ->
