@@ -58,9 +58,9 @@ class Color
     if roll < 0.25
       child.r = clamp(0, @r + Math.random! * 10 - 5, 255)
     else if roll < 0.50
-      child.r = clamp(0, @g + Math.random! * 10 - 5, 255)
+      child.g = clamp(0, @g + Math.random! * 10 - 5, 255)
     else if roll < 0.75
-      child.r = clamp(0, @b + Math.random! * 10 - 5, 255)
+      child.b = clamp(0, @b + Math.random! * 10 - 5, 255)
     else
       child.a = clamp(0, @a + Math.random! / 10 - 0.05, 1)
     return child
