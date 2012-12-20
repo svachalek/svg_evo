@@ -328,6 +328,7 @@ breed = !->
   setTimeout breed, 0
 
 window.addEventListener 'load', ->
+  boxes = document.getElementById('boxes')
   target = document.getElementById('target')
   target.width = imageWidth
   target.height = imageHeight
@@ -341,7 +342,7 @@ window.addEventListener 'load', ->
     div.className = 'box'
     div.appendChild canvas
     div.appendChild label
-    document.body.appendChild div
+    boxes.appendChild div
 
   img = new Image!
   img.onload = ->
