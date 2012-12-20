@@ -83,6 +83,8 @@ class Painting
     return this
 
   paint: !(canvas) ->
+    canvas.width = imageWidth
+    canvas.height = imageHeight
     ctx = canvas.getContext '2d'
     ctx.clearRect 0, 0, imageWidth, imageHeight
     for shape in @shapes
@@ -331,7 +333,7 @@ generateWeightMap = ->
 paintWeightMap = ->
   weights = document.getElementById('weights')
   weights.width = imageWidth
-  weights.height = imageWidth
+  weights.height = imageHeight
   ctx = weights.getContext '2d'
   imageData = ctx.createImageData(imageWidth, imageHeight)
   data = imageData.data
@@ -353,8 +355,6 @@ restart = ->
 
 createBox = (cls) ->
   canvas = document.createElement 'canvas'
-  canvas.width = imageWidth
-  canvas.height = imageHeight
   box = document.createElement 'div'
   label = document.createElement 'p'
   box.className = 'box ' + cls
@@ -376,11 +376,23 @@ window.addEventListener 'load', ->
     boxesElement.appendChild boxes[i++] = createBox 'crossbreed'
 
   img = new Image!
-  img.onload = ->
+  img.addEventListener 'load', ->
+    if img.width > img.height
+      imageWidth := Math.floor img.width / img.height * 100
+      imageHeight := 100
+    else
+      imageHeight := Math.floor img.height / img.width * 100
+      imageWidth := 100
+    target.width = imageWidth
+    target.height = imageHeight
     ctx = target.getContext '2d'
     ctx.drawImage img, 0, 0, imageWidth, imageHeight
     targetData := (ctx.getImageData 0, 0, imageWidth, imageHeight).data
     generateWeightMap!
     restart!
-  img.src = 'Lenna.png'
+
+  imageSelect = document.getElementById 'image'
+  img.src = imageSelect.value
+  imageSelect.addEventListener 'change', ->
+    img.src = imageSelect.value
 
