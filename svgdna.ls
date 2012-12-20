@@ -6,8 +6,8 @@ imageShapes = 100
 imageRadius = (Math.sqrt imageWidth * imageWidth + imageHeight * imageHeight) / 2
 
 generationKeep = 10
-generationMutate = 20
-generationCross = 20
+generationMutate = 25
+generationCross = 15
 generationSize = generationKeep + generationMutate + generationCross
 generationNumber = 0
 
@@ -82,7 +82,7 @@ class Painting
   show: (box) ->
     @paint canvases[box]
     unless @score then @diffScore canvases[box]
-    label = (Math.floor @score * 100) + '% [' + @shapes.length + ']'
+    label = Math.floor(@score * 10000) + ' [' + @shapes.length + ']'
     if @age
       label += ' (' + @origin + @age + ')'
     labels[box].innerText = label
@@ -105,7 +105,7 @@ class Painting
     @score = score / (imageHeight * imageWidth)
 
   remove: !->
-    if @shapes.length
+    if @shapes.length > 1
       # lean towards removing from the bottom
       i = Math.floor lowWeightedRandom! * @shapes.length
       @shapes.splice i, 1
@@ -138,17 +138,21 @@ class Painting
 
   mutate: ->
     child = new Painting @shapes
-    child.origin = 'M'
     roll = Math.random!
-    if roll < 0.05
+    if roll < 0.01
+      child.origin = 'MA'
       child.add!
-    if roll < 0.10
-      child.fork!
-    else if roll < 0.25
+    else if roll < 0.03
+      child.origin = 'MR'
       child.remove!
-    else if roll < 0.30
+    else if roll < 0.07
+      child.origin = 'MS'
       child.swap!
+    else if roll < 0.20
+      child.origin = 'MF'
+      child.fork!
     else
+      child.origin = 'MS'
       child.mutateShape!
     return child
 
@@ -162,7 +166,7 @@ class Painting
       else
         shapes.push other.shapes[i]
       ++i
-    new Painting shapes, 'C'
+    new Painting shapes, 'CB'
 
 class Shape
   (source) ->
@@ -235,13 +239,13 @@ class Oval extends Shape
   mutate: ->
     roll = Math.random!
     child = @copy!
-    if roll < 0.10
+    if roll < 0.20
       child.rotate += (lowWeightedRandom! - 0.5) * 2 * Math.PI
-    else if roll < 0.20
-      child.sx += (Math.random! - 0.5) / 2
-    else if roll < 0.30
-      child.sy += (Math.random! - 0.5) / 2
+    else if roll < 0.40
+      child.sx += (Math.random! - 0.5) / 4
     else if roll < 0.60
+      child.sy += (Math.random! - 0.5) / 4
+    else if roll < 0.80
       child.center = @center.mutate!
     else
       child.color = @color.mutate!
@@ -263,21 +267,16 @@ breed = !->
   document.getElementById('time').innerText = Math.floor elapsed
   document.getElementById('speed').innerText = Math.floor generationNumber / elapsed
   paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
-  keep = []
-  keep.push paintings[0]
-  keep.push paintings[1]
-  keep.push paintings[2]
-  keep.push paintings[3]
-  keep.push paintings[5]
-  keep.push paintings[7]
-  keep.push paintings[10]
-  keep.push paintings[13]
-  keep.push paintings[17]
-  keep.push paintings[21]
+  keep = paintings.splice(0, 1)
+  paintings.splice(paintings.length / 2)
+  while keep.length < generationKeep
+    i = Math.floor highWeightedRandom! * paintings.length
+    keep.push paintings.splice(i, 1)[0]
   paintings := keep
-  for i in [0 to generationKeep - 1]
-    paintings[i].age = (paintings[i].age || 0) + 1
-    paintings[i].show i
+  paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
+  for painting, i in paintings
+    painting.age = (painting.age || 0) + 1
+    painting.show i
   for i in [0 to generationMutate - 1]
     mom = paintings[Math.floor Math.random! * generationKeep]
     child = mom.mutate!
