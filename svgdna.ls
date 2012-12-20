@@ -146,7 +146,7 @@ class Painting
       child.origin = 'MR'
       child.remove!
     else if roll < 0.30
-      child.origin = 'MS'
+      child.origin = 'MX'
       child.swap!
     else if roll < 0.40
       child.origin = 'MF'
