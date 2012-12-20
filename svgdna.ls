@@ -95,11 +95,10 @@ class Painting
   swap: !->
     if @shapes.length >= 2
       # lean towards swapping at the top
-      i = Math.floor highWeightedRandom! * @shapes.length
-      j = Math.floor highWeightedRandom! * @shapes.length
+      i = Math.floor highWeightedRandom! * (@shapes.length - 1)
       tmp = @shapes[i]
-      @shapes[i] = @shapes[j]
-      @shapes[j] = tmp
+      @shapes[i] = @shapes[i + 1]
+      @shapes[i + 1] = tmp
 
   mutateShape: !->
     if @shapes.length
@@ -115,7 +114,7 @@ class Painting
       child.add!
     if roll < 0.10
       child.fork!
-    else if roll < 0.20
+    else if roll < 0.25
       child.remove!
     else if roll < 0.30
       child.swap!
