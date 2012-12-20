@@ -1,4 +1,4 @@
-startTime = Date.now!
+cumulativeTime = 0
 
 imageWidth = 100
 imageHeight = 100
@@ -261,11 +261,7 @@ targetData = null
 bestData = null
 
 breed = !->
-  ++generationNumber
-  elapsed = (Date.now! - startTime) / 1000
-  document.getElementById('generation').innerText = generationNumber
-  document.getElementById('time').innerText = Math.floor elapsed
-  document.getElementById('speed').innerText = Math.floor generationNumber / elapsed
+  startTime = Date.now!
   paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
   keep = paintings.splice(0, 1)
   paintings.splice(paintings.length / 2)
@@ -291,6 +287,11 @@ breed = !->
     child = mom.cross dad
     paintings.push child
     child.show paintings.length - 1
+  ++generationNumber
+  cumulativeTime += Date.now! - startTime
+  document.getElementById('generation').innerText = generationNumber
+  document.getElementById('time').innerText = Math.floor cumulativeTime / 1000
+  document.getElementById('speed').innerText = Math.floor generationNumber / (cumulativeTime / 1000)
   setTimeout breed, 0
 
 window.addEventListener 'load', ->
