@@ -26,6 +26,21 @@ randomRadius = -> Math.floor lowWeightedRandom! * imageRadius
 randomByte = -> Math.floor Math.random! * 256
 clamp = (min, n, max) -> if n < min then min else if n > max then max else n
 
+class Point
+  (@x, @y) -> unless x? then @randomize!
+
+  randomize: ->
+    @x = randomX!
+    @y = randomY!
+    return this
+
+  mutate: ->
+    r = randomRadius!
+    a = Math.random! * Math.PI * 2
+    dx = r * Math.cos a
+    dy = r * Math.sin a
+    new Point @x + dx, @y + dy
+
 class Color
 
   (@r, @g, @b, @a) -> unless @r? then @randomize!
@@ -69,7 +84,7 @@ class Painting
   show: (box) ->
     @paint canvases[box]
     unless @score then @score = diffScore canvases[box]
-    label = (Math.floor @score * 100) + '% [' + @shapes.length + ']'
+    label = (Math.floor @score * 100) + '% ' + @gender + '[' + @shapes.length + ']'
     if @age
       label += ' (' + @origin + @age + ')'
     labels[box].innerText = label
@@ -146,12 +161,9 @@ class Triangle extends Shape
 
   randomize: !->
     @rotate = 0
-    @x0 = randomX!
-    @y0 = randomY!
-    @x1 = randomX!
-    @y1 = randomY!
-    @x2 = randomX!
-    @y2 = randomY!
+    @p0 = new Point!
+    @p1 = new Point!
+    @p2 = new Point!
     @color = new Color!
 
   paint: !(ctx) ->
@@ -159,46 +171,26 @@ class Triangle extends Shape
     ctx.fillStyle = @color.fillStyle!
     ctx.rotate @rotate
     ctx.beginPath!
-    ctx.moveTo @x0, @y0
-    ctx.lineTo @x1, @y1
-    ctx.lineTo @x2, @y2
+    ctx.moveTo @p0.x, @p0.y
+    ctx.lineTo @p1.x, @p1.y
+    ctx.lineTo @p2.x, @p2.y
     ctx.closePath!
     ctx.fill!
     ctx.restore!
-
-  move: ->
-    r = randomRadius!
-    a = Math.random! * Math.PI * 2
-    dx = r * Math.cos a
-    dy = r * Math.sin a
-    @x0 += dx
-    @y0 += dy
-    @x1 += dx
-    @y1 += dy
-    @x2 += dx
-    @y2 += dy
 
   copy: -> new Triangle this
 
   mutate: ->
     roll = Math.random!
     child = @copy!
-    if roll < 0.1
-      child.x0 = randomX!
-    else if roll < 0.2
-      child.y0 = randomY!
-    else if roll < 0.3
-      child.x1 = randomX!
+    if roll < 0.2
+      child.p0 = @p0.mutate!
     else if roll < 0.4
-      child.y1 = randomY!
-    else if roll < 0.5
-      child.x2 = randomX!
+      child.p1 = @p1.mutate!
     else if roll < 0.6
-      child.y2 = randomY!
-    else if roll < 0.7
-      child.rotate += (lowWeightedRandom! - 0.5) * 2 * Math.PI
+      child.p2 = @p2.mutate!
     else if roll < 0.8
-      child.move!
+      child.rotate += (lowWeightedRandom! - 0.5) * 2 * Math.PI
     else
       child.color = @color.mutate!
     return child
@@ -208,8 +200,7 @@ class Oval extends Shape
   randomize: !->
     @sx = @sy = 1
     @rotate = 0
-    @x = randomX!
-    @y = randomY!
+    @center = new Point!
     @r = randomRadius!
     @color = new Color!
 
@@ -219,16 +210,10 @@ class Oval extends Shape
     ctx.rotate @rotate
     ctx.scale @sx, @sy
     ctx.beginPath!
-    ctx.arc @x, @y, @r, 0 , 2 * Math.PI, false
+    ctx.arc @center.x, @center.y, @r, 0 , 2 * Math.PI, false
     ctx.closePath!
     ctx.fill!
     ctx.restore!
-
-  move: ->
-    r = randomRadius!
-    a = Math.random! * Math.PI * 2
-    @x += r * Math.cos a
-    @y += r * Math.sin a
 
   copy: -> new Oval this
 
@@ -242,7 +227,7 @@ class Oval extends Shape
     else if roll < 0.30
       child.sy += (Math.random! - 0.5) / 2
     else if roll < 0.60
-      child.move!
+      child.center = @center.mutate!
     else
       child.color = @color.mutate!
     return child
