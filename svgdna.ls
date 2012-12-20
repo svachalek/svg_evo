@@ -349,16 +349,15 @@ restart = ->
   for i in [0 to generationSize - 1]
     painting = new Painting!
     paintings.push painting
-    painting.show i
   setTimeout breed, 0
 
-createBox = ->
+createBox = (cls) ->
   canvas = document.createElement 'canvas'
   canvas.width = imageWidth
   canvas.height = imageHeight
   box = document.createElement 'div'
   label = document.createElement 'p'
-  box.className = 'box'
+  box.className = 'box ' + cls
   box.appendChild canvas
   box.appendChild label
   return box
@@ -368,8 +367,13 @@ window.addEventListener 'load', ->
   target = document.getElementById('target')
   target.width = imageWidth
   target.height = imageHeight
-  for i in [0 to generationSize - 1]
-    boxesElement.appendChild boxes[i] = createBox!
+  i = 0
+  for n in [1 to generationKeep]
+    boxesElement.appendChild boxes[i++] = createBox 'survivor'
+  for n in [1 to generationMutate]
+    boxesElement.appendChild boxes[i++] = createBox 'mutant'
+  for n in [1 to generationCross]
+    boxesElement.appendChild boxes[i++] = createBox 'crossbreed'
 
   img = new Image!
   img.onload = ->
