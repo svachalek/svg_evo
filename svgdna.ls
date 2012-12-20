@@ -295,7 +295,7 @@ breed = !->
   document.getElementById('generation').innerText = generationNumber
   document.getElementById('time').innerText = Math.floor elapsed
   document.getElementById('speed').innerText = Math.floor generationNumber / elapsed
-  paintings.sort (a, b) -> b.score - a.score
+  paintings.sort (a, b) -> (b.score - a.score) || (a.shapes.length - b.shapes.length)
   keep = []
   keep.push paintings[0]
   keep.push paintings[1]
