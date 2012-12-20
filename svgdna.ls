@@ -82,7 +82,7 @@ class Painting
   show: (box) ->
     @paint canvases[box]
     unless @score then @diffScore canvases[box]
-    label = (Math.floor @score * 100) + '% ' + @gender + '[' + @shapes.length + ']'
+    label = (Math.floor @score * 100) + '% [' + @shapes.length + ']'
     if @age
       label += ' (' + @origin + @age + ')'
     labels[box].innerText = label
@@ -91,19 +91,18 @@ class Painting
     ctx = canvas.getContext '2d'
     score = 0
     data = (ctx.getImageData 0, 0, imageWidth, imageHeight).data
-    x = 0
-    while x < imageWidth
-      y = 0
-      while y < imageHeight
-        base = x * y * 4
+    y = 0
+    while y < imageHeight
+      x = 0
+      while x < imageWidth
+        base = (x + (y * imageWidth)) * 4
         dr = data[base + 0] - targetData[base + 0]
         dg = data[base + 1] - targetData[base + 1]
         db = data[base + 2] - targetData[base + 2]
         score += Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
-        ++y
-      ++x
+        ++x
+      ++y
     @score = score / (imageHeight * imageWidth)
-    @gender = 'N'
 
   remove: !->
     if @shapes.length
