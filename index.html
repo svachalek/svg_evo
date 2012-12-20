@@ -2,17 +2,21 @@
 
 <link rel='stylesheet' type='text/css' href='svgdna.css'>
 
-<p>Generation: <span id='generation'>0</span></p>
-<p>Time: <span id='time'>0</span></p>
-<p>Generations/sec: <span id='speed'>?</span></p>
+<h2>Vector Image Evolution</h2>
+
+<table>
+  <tr><th>Generation:      <td id='generation'>0
+  <tr><th>Time:            <td id='time'>0
+  <tr><th>Generations/sec: <td id='speed'>?
+</table>
 
 <section id='boxes'>
-  <div class='box'>
+  <div id='target-box' class='box'>
     <canvas id='target'></canvas>
     <p>Target</p>
   </div>
-  <div class='box'>
-    <canvas id=weights'></canvas>
+  <div id='weights-box' class='box'>
+    <canvas id='weights'></canvas>
     <p>Weights</p>
   </div>
 </section>
