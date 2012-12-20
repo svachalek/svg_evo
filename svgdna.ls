@@ -217,8 +217,9 @@ class Triangle extends Shape
 class Oval extends Shape
 
   randomize: !->
-    @sx = @sy = 1
-    @rotate = 0
+    @sx = Math.random! + 0.5
+    @sy = Math.random! + 0.5
+    @rotate = Math.random! * 2 * Math.PI
     @center = new Point!
     @r = randomRadius!
     @color = new Color!
