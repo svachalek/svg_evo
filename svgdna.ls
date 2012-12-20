@@ -12,8 +12,7 @@ generationSize = generationKeep + generationMutate + generationCross
 generationNumber = 0
 
 paintings = []
-canvases = []
-labels = []
+boxes = []
 
 lowWeightedRandom = -> Math.cos(Math.random! * Math.PI / 2)
 highWeightedRandom = -> Math.sin(Math.random! * Math.PI / 2)
@@ -90,12 +89,14 @@ class Painting
       shape.paint ctx
 
   show: (box) ->
-    @paint canvases[box]
-    unless @score then @diffScore canvases[box]
+    box = boxes[box]
+    canvas = box.children[0]
+    @paint canvas
+    unless @score then @diffScore canvas
     label = Math.floor(@score * 10000) + ' [' + @shapes.length + ']'
     if @age
       label += ' (' + @origin + @age + ')'
-    setText labels[box], label
+    setText box.children[1], label
 
   diffScore: (canvas) ->
     ctx = canvas.getContext '2d'
@@ -352,21 +353,21 @@ restart = ->
   setTimeout breed, 0
 
 window.addEventListener 'load', ->
-  boxes = document.getElementById('boxes')
+  boxesElement = document.getElementById('boxes')
   target = document.getElementById('target')
   target.width = imageWidth
   target.height = imageHeight
   for i in [0 to generationSize - 1]
-    canvas = canvases[i] = document.createElement 'canvas'
+    canvas = document.createElement 'canvas'
     canvas.width = imageWidth
     canvas.height = imageHeight
-    div = document.createElement 'div'
-    label = labels[i] = document.createElement 'p'
+    box = boxes[i] = document.createElement 'div'
+    label = document.createElement 'p'
     label.innerText = i.toString!
-    div.className = 'box'
-    div.appendChild canvas
-    div.appendChild label
-    boxes.appendChild div
+    box.className = 'box'
+    box.appendChild canvas
+    box.appendChild label
+    boxesElement.appendChild box
 
   img = new Image!
   img.onload = ->
