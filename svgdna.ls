@@ -18,8 +18,8 @@ labels = []
 lowWeightedRandom = -> Math.cos(Math.random! * Math.PI / 2)
 highWeightedRandom = -> Math.sin(Math.random! * Math.PI / 2)
 
-randomX = -> Math.floor (Math.random! * 1.5 - 0.25) * imageWidth
-randomY = -> Math.floor (Math.random! * 1.5 - 0.25) * imageHeight
+randomX = -> Math.floor Math.random! * imageWidth
+randomY = -> Math.floor Math.random! * imageHeight
 randomRadius = -> Math.floor lowWeightedRandom! * imageRadius / 2
 randomByte = -> Math.floor Math.random! * 256
 clamp = (min, n, max) -> if n < min then min else if n > max then max else n
