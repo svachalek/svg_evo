@@ -24,6 +24,8 @@ randomRadius = -> Math.floor lowWeightedRandom! * imageRadius / 2
 randomByte = -> Math.floor Math.random! * 256
 clamp = (min, n, max) -> if n < min then min else if n > max then max else n
 
+setText = (element, text) -> element.innerText = element.textContent = text
+
 class Point
   (@x, @y) -> unless x? then @randomize!
 
@@ -85,7 +87,7 @@ class Painting
     label = Math.floor(@score * 10000) + ' [' + @shapes.length + ']'
     if @age
       label += ' (' + @origin + @age + ')'
-    labels[box].innerText = label
+    setText labels[box], label
 
   diffScore: (canvas) ->
     ctx = canvas.getContext '2d'
@@ -290,9 +292,17 @@ breed = !->
     child.show paintings.length - 1
   ++generationNumber
   cumulativeTime += Date.now! - startTime
-  document.getElementById('generation').innerText = generationNumber
-  document.getElementById('time').innerText = Math.floor cumulativeTime / 1000
-  document.getElementById('speed').innerText = Math.floor generationNumber / (cumulativeTime / 1000)
+  setText document.getElementById('generation'), generationNumber
+  setText document.getElementById('time'), Math.floor cumulativeTime / 1000
+  setText document.getElementById('speed'), Math.floor generationNumber / (cumulativeTime / 1000)
+  setTimeout breed, 0
+
+restart = ->
+  paintings := []
+  for i in [0 to generationSize - 1]
+    painting = new Painting!
+    paintings.push painting
+    painting.show i
   setTimeout breed, 0
 
 window.addEventListener 'load', ->
@@ -317,10 +327,6 @@ window.addEventListener 'load', ->
     ctx = target.getContext '2d'
     ctx.drawImage img, 0, 0, imageWidth, imageHeight
     targetData := (ctx.getImageData 0, 0, imageWidth, imageHeight).data
-    for i in [0 to generationSize - 1]
-      painting = new Painting()
-      paintings.push painting
-      painting.show i
-    setTimeout breed, 0
+    restart!
   img.src = 'Lenna.png'
 
