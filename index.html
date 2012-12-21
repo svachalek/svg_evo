@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+
+<meta charset='utf-8'>
+
+<title>SVG DNA</title>
+
+<link rel='stylesheet' type='text/css' href='svgdna.css'>
+
+<h2>Vector Painting Evolution</h2>
+
+<p id='intro'>
+  This page starts by creating a set of paintings that each contain one oval or triangle.
+  These paintings are mutated by adding, removing, or altering components, and also
+  cross-bred with other paintings. The results are compared to the image labeled <em>Target</em>,
+  paying particular attention to areas shown in the image labeled <em>Weights</em>.
+  The dark areas in the <em>Differences</em> image show where the target image is most different
+  from the best solution. The best image and a selection of the others are retained, the
+  rest are thrown out, and the process repeats.
+
+<table id='stats'>
+  <tr><th>Target image:    <td>
+                             <select id='imageSelect' visible='1'>
+                               <option>Lenna.jpg</option>
+                               <option>MonaLisa.jpg</option>
+                               <option>StarryNight.jpg</option>
+                               <option>AmericanGothic.jpg</option>
+                               <option>ShadySpot.jpg</option>
+                               <option>FantasyIsland.jpg</option>
+                               <option>Flowers.jpg</option>
+                               <option>HanaleiValley.jpg</option>
+                               <option>Kitties.jpg</option>
+                               <option>ZhangJiaJie.jpg</option>
+                             </select>
+  <tr><th>Generation:      <td id='generation'>0
+  <tr><th>Time:            <td id='time'>0
+  <tr><th>Generations/sec: <td id='speed'>?
+</table>
+
+<section id='boxes'>
+  <div id='target-box' class='box'>
+    <canvas id='target' width=100 height=100></canvas>
+    <p>Target</p>
+  </div>
+  <div id='weights-box' class='box'>
+    <canvas id='weights' width=100 height=100></canvas>
+    <p>Weights</p>
+  </div>
+  <div id='diff-box' class='box'>
+    <canvas id='diff' width=100 height=100></canvas>
+    <p>Differences</p>
+  </div>
+</section>
+
+<div id='legend'>
+  <div class='legend survivor'> </div>    <label>Survivor</label>
+  <div class='legend mutant'> </div>      <label>Mutant</label>
+  <div class='legend crossbreed'> </div>  <label>Crossbreed</label>
+</div>
+
+<div class='score'>@240 #35 MX3</div> <label>Accuracy score (lower is better), number of shapes, origin code and age.</label>
+
+<table>
+</table>
+
+<p id='footer'>
+  <a href='https://github.com/svachalek/svgdna'>The source code is here.</a>
+  Written in LiveScript by <a href="mailto:svachalek@gmail.com">Scott Vachalek</a>.
+  Inspired by <a href='http://rogeralsing.com/2008/12/11/genetic-programming-mona-lisa-source-code-and-binaries/'>Roger Alsing's Mona Lisa</a>.
+
+<script src='svgdna.js'></script>
