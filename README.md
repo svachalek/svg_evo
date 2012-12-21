@@ -9,3 +9,5 @@ cross-bred with other paintings. The results are compared to the image labeled "
 paying particular attention to areas shown in the image labeled "Weights".
 The best image and a selection of the others are retained, the rest are thrown out,
 and the process repeats.
+
+The page can be seen live [here](http://static.svachalek.net/vector/index.html).
