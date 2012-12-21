@@ -545,7 +545,7 @@ window.addEventListener('load', function(){
   }
   for (i$ = 0, len$ = (ref$ = (fn2$())).length; i$ < len$; ++i$) {
     n = ref$[i$];
-    box = createBox('cross');
+    box = createBox('crossbreed');
     boxesElement.appendChild(box);
     crossBoxes.push(box);
   }
