@@ -10,7 +10,7 @@ paying particular attention to areas shown in the image labeled "Weights".
 The best image and a selection of the others are retained, the rest are thrown out,
 and the process repeats.
 
-The page can be seen live [here](http://static.svachalek.net/vector/index.html).
+The page can be seen live [here](http://svachalek.github.com/svgdna/).
 
 This is entirely client-side code. To build, just run:
 
