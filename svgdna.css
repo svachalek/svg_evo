@@ -3,6 +3,20 @@ body {
   font-family:      sans-serif;
 }
 
+#intro {
+  display:          inline-block;
+  text-align:       left;
+  vertical-align:   middle;
+  margin:           1em;
+  max-width:        25em;
+}
+
+#stats {
+  display:          inline-table;
+  vertical-align:   middle;
+  margin:           1em;
+}
+
 #boxes {
   font-size:        0;
 }
@@ -73,3 +87,25 @@ td {
   min-width:        4em;
 }
 
+#legend {
+  margin:           1em;
+}
+
+.legend {
+  display:          inline-block;
+  vertical-align:   middle;
+  width:            1em;
+  height:           1em;
+  margin-left:      1em;
+}
+
+label {
+  vertical-align:   middle;
+}
+
+.score {
+  font-family:      monospace;
+  font-size:        10px;
+  display:          inline-block;
+  margin-left:      1em;
+}

@@ -6,7 +6,15 @@
 
 <h2>Vector Painting Evolution</h2>
 
-<table>
+<p id='intro'>
+  This page starts by creating a set of paintings that each contain one oval or triangle.
+  These paintings are mutated by adding, removing, or altering components, and also
+  cross-bred with other paintings. The results are compared to the image labeled "Target",
+  paying particular attention to areas shown in the image labeled "Weights".
+  The best image and a selection of the others are retained, the rest are thrown out,
+  and the process repeats.
+
+<table id='stats'>
   <tr><th>Source image:    <td>
                              <select id='image' name='image' visible='1'>
                                <option>Lenna.jpg</option>
@@ -36,6 +44,20 @@
   </div>
 </section>
 
-<p>Inspired by <a href='http://rogeralsing.com/2008/12/11/genetic-programming-mona-lisa-source-code-and-binaries/'>Roger Alsing's Mona Lisa</a></p>
+<div id='legend'>
+  <div class='legend survivor'> </div>    <label>Survivor</label>
+  <div class='legend mutant'> </div>      <label>Mutant</label>
+  <div class='legend crossbreed'> </div>  <label>Crossbreed</label>
+</div>
+
+<div class='score'>240 [35] (MX3)</div> <label>Accuracy score (lower is better), number of shapes, origin code and age.</label>
+
+<table>
+</table>
+
+<p id='footer'>
+  <a href='svgdna.ls'>The source code is here.</a>
+  Written in LiveScript by <a href="mailto:svachalek@gmail.com">Scott Vachalek</a>.
+  Inspired by <a href='http://rogeralsing.com/2008/12/11/genetic-programming-mona-lisa-source-code-and-binaries/'>Roger Alsing's Mona Lisa</a>.
 
 <script src='svgdna.js'></script>
