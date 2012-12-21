@@ -20,7 +20,7 @@ cumulativeTime = 0
 imageWidth = 100
 imageHeight = 100
 imageShapes = 100
-imageRadius = (Math.sqrt imageWidth * imageWidth + imageHeight * imageHeight) / 2
+imageRadius = -> (Math.sqrt imageWidth * imageWidth + imageHeight * imageHeight) / 2
 
 generationKeep = 10
 generationMutate = 25
@@ -36,7 +36,7 @@ highWeightedRandom = -> Math.sin(Math.random! * Math.PI / 2)
 
 randomX = -> Math.floor Math.random! * imageWidth
 randomY = -> Math.floor Math.random! * imageHeight
-randomRadius = -> Math.floor lowWeightedRandom! * imageRadius / 2
+randomRadius = -> Math.floor lowWeightedRandom! * imageRadius! / 2
 randomByte = -> Math.floor Math.random! * 256
 clamp = (min, n, max) -> if n < min then min else if n > max then max else n
 
