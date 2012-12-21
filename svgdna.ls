@@ -294,7 +294,6 @@ breed = !->
     mom = paintings[Math.floor Math.random! * generationKeep]
     dad = paintings[Math.floor Math.random! * generationKeep]
     while mom == dad
-      mom = paintings[Math.floor Math.random! * generationKeep]
       dad = paintings[Math.floor Math.random! * generationKeep]
     child = mom.cross dad
     paintings.push child
