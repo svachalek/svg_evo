@@ -20,15 +20,18 @@ imageHeight = 100
 imageShapes = 100
 imageRadius = -> (Math.sqrt imageWidth * imageWidth + imageHeight * imageHeight) / 2
 
-generationKeep = 10
-generationMutate = 25
-generationCross = 15
+generationKeep = 4
+generationMutate = 15
+generationCross = 7
 generationSize = -> generationKeep + generationMutate + generationCross
+generationStartCross = 0
 generationNumber = 0
 cumulativeTime = 0
 
 paintings = []
-boxes = []
+survivorBoxes = []
+mutantBoxes = []
+crossBoxes = []
 
 lowWeightedRandom = -> Math.cos(Math.random! * Math.PI / 2)
 highWeightedRandom = -> Math.sin(Math.random! * Math.PI / 2)
@@ -37,6 +40,7 @@ randomX = -> Math.floor Math.random! * imageWidth
 randomY = -> Math.floor Math.random! * imageHeight
 randomRadius = -> Math.floor lowWeightedRandom! * imageRadius! / 2
 randomByte = -> Math.floor Math.random! * 256
+randomPainting = -> Math.floor Math.random! * paintings.length
 clamp = (min, n, max) -> if n < min then min else if n > max then max else n
 
 setText = (element, text) -> element.innerText = element.textContent = text
@@ -109,7 +113,6 @@ class Painting
       shape.paint ctx
 
   show: (box) ->
-    box = boxes[box]
     canvas = box.children[0]
     @paint canvas
     unless @score then @diffScore canvas
@@ -186,19 +189,19 @@ class Painting
     child = new Painting @shapes
     roll = Math.random!
     if roll < 0.10
-      child.origin = 'MA'
+      child.origin = 'A'
       child.add!
     else if roll < 0.20
-      child.origin = 'MR'
+      child.origin = 'R'
       child.remove!
     else if roll < 0.30
-      child.origin = 'MX'
+      child.origin = 'X'
       child.swap!
     else if roll < 0.40
-      child.origin = 'MF'
+      child.origin = 'F'
       child.fork!
     else
-      child.origin = 'MS'
+      child.origin = 'S'
       child.mutateShape!
     return child
 
@@ -212,7 +215,7 @@ class Painting
       else
         shapes.push other.shapes[i]
       ++i
-    new Painting shapes, 'CB'
+    new Painting shapes, 'X'
 
 class Shape
   (source) ->
@@ -309,31 +312,34 @@ bestData = null
 
 breed = !->
   startTime = Date.now!
+  # try some mutations
+  for i in [0 to generationMutate - 1]
+    n = randomPainting!
+    mom = paintings[n]
+    child = mom.mutate!
+    child.show mutantBoxes[i]
+    if child.score < mom.score
+      paintings[n] = child
+  if generationNumber >= generationStartCross
+    for i in [0 to generationCross - 1]
+      mom = randomPainting!
+      dad = randomPainting!
+      while mom == dad
+         dad = randomPainting!
+      child = paintings[mom].cross paintings[dad]
+      child.show crossBoxes[i]
+      if child.score < mom.score
+        paintings[mom] = child
+      else if child.score < dad.score
+        paintings[dad] = child
+  # show the best
   paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
-  keep = paintings.splice(0, 1)
-  if keep[0].score? then keep[0].paintDiff document.getElementById 'diff'
-  paintings.splice(paintings.length / 2)
-  while keep.length < generationKeep
-    i = Math.floor highWeightedRandom! * paintings.length
-    keep.push paintings.splice(i, 1)[0]
-  paintings := keep
-  paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
+  best = paintings[0]
+  if best.score? then best.paintDiff document.getElementById 'diff'
   for painting, i in paintings
     painting.age = (painting.age || 0) + 1
-    painting.show i
-  for i in [0 to generationMutate - 1]
-    mom = paintings[Math.floor Math.random! * generationKeep]
-    child = mom.mutate!
-    paintings.push child
-    child.show paintings.length - 1
-  for i in [0 to generationCross - 1]
-    mom = paintings[Math.floor Math.random! * generationKeep]
-    dad = paintings[Math.floor Math.random! * generationKeep]
-    while mom == dad
-      dad = paintings[Math.floor Math.random! * generationKeep]
-    child = mom.cross dad
-    paintings.push child
-    child.show paintings.length - 1
+    painting.show survivorBoxes[i]
+  # update stats
   ++generationNumber
   cumulativeTime += Date.now! - startTime
   setText document.getElementById('generation'), generationNumber
@@ -386,10 +392,7 @@ paintWeightMap = ->
 restart = ->
   cumulativeTime := 0
   generationNumber := 0
-  paintings := []
-  for i in [0 to generationSize! - 1]
-    painting = new Painting!
-    paintings.push painting
+  paintings := [new Painting! for n in [1 to generationKeep]]
   setTimeout breed, 0
 
 createBox = (cls) ->
@@ -408,11 +411,17 @@ window.addEventListener 'load', ->
   target.height = imageHeight
   i = 0
   for n in [1 to generationKeep]
-    boxesElement.appendChild boxes[i++] = createBox 'survivor'
+    box = createBox 'survivor'
+    boxesElement.appendChild box
+    survivorBoxes.push box
   for n in [1 to generationMutate]
-    boxesElement.appendChild boxes[i++] = createBox 'mutant'
+    box = createBox 'mutant'
+    boxesElement.appendChild box
+    mutantBoxes.push box
   for n in [1 to generationCross]
-    boxesElement.appendChild boxes[i++] = createBox 'crossbreed'
+    box = createBox 'cross'
+    boxesElement.appendChild box
+    crossBoxes.push box
 
   img = new Image!
   img.addEventListener 'load', ->
