@@ -1,0 +1,6 @@
+cp ~/svgdna/*.html .
+cp ~/svgdna/*.css .
+cp ~/svgdna/images/* images
+cp ~/svgdna/*.js .
+git add .
+

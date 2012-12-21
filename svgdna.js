@@ -1,16 +1,23 @@
-var cumulativeTime, imageWidth, imageHeight, imageShapes, imageRadius, generationKeep, generationMutate, generationCross, generationSize, generationNumber, paintings, boxes, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomRadius, randomByte, clamp, setText, diffPoint, Point, Color, Painting, Shape, Triangle, Oval, randomShape, targetData, bestData, breed, weightMap, generateWeightMap, paintWeightMap, restart, createBox;
-cumulativeTime = 0;
+var imageWidth, imageHeight, imageShapes, imageRadius, generationKeep, generationMutate, generationCross, generationSize, generationStartCross, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomRadius, randomByte, randomPainting, clamp, setText, diffPoint, Point, Color, Painting, Shape, Triangle, Oval, randomShape, targetData, bestData, breed, weightMap, generateWeightMap, paintWeightMap, restart, createBox;
 imageWidth = 100;
 imageHeight = 100;
 imageShapes = 100;
-imageRadius = Math.sqrt(imageWidth * imageWidth + imageHeight * imageHeight) / 2;
-generationKeep = 10;
-generationMutate = 25;
-generationCross = 15;
-generationSize = generationKeep + generationMutate + generationCross;
+imageRadius = function(){
+  return Math.sqrt(imageWidth * imageWidth + imageHeight * imageHeight) / 2;
+};
+generationKeep = 4;
+generationMutate = 15;
+generationCross = 7;
+generationSize = function(){
+  return generationKeep + generationMutate + generationCross;
+};
+generationStartCross = 0;
 generationNumber = 0;
+cumulativeTime = 0;
 paintings = [];
-boxes = [];
+survivorBoxes = [];
+mutantBoxes = [];
+crossBoxes = [];
 lowWeightedRandom = function(){
   return Math.cos(Math.random() * Math.PI / 2);
 };
@@ -24,10 +31,13 @@ randomY = function(){
   return Math.floor(Math.random() * imageHeight);
 };
 randomRadius = function(){
-  return Math.floor(lowWeightedRandom() * imageRadius / 2);
+  return Math.floor(lowWeightedRandom() * imageRadius() / 2);
 };
 randomByte = function(){
   return Math.floor(Math.random() * 256);
+};
+randomPainting = function(){
+  return Math.floor(Math.random() * paintings.length);
 };
 clamp = function(min, n, max){
   if (n < min) {
@@ -144,7 +154,6 @@ Painting = (function(){
   };
   prototype.show = function(box){
     var canvas, label;
-    box = boxes[box];
     canvas = box.children[0];
     this.paint(canvas);
     if (!this.score) {
@@ -238,19 +247,19 @@ Painting = (function(){
     child = new Painting(this.shapes);
     roll = Math.random();
     if (roll < 0.10) {
-      child.origin = 'MA';
+      child.origin = 'A';
       child.add();
     } else if (roll < 0.20) {
-      child.origin = 'MR';
+      child.origin = 'R';
       child.remove();
     } else if (roll < 0.30) {
-      child.origin = 'MX';
+      child.origin = 'X';
       child.swap();
     } else if (roll < 0.40) {
-      child.origin = 'MF';
+      child.origin = 'F';
       child.fork();
     } else {
-      child.origin = 'MS';
+      child.origin = 'S';
       child.mutateShape();
     }
     return child;
@@ -268,7 +277,7 @@ Painting = (function(){
       }
       ++i;
     }
-    return new Painting(shapes, 'CB');
+    return new Painting(shapes, 'X');
   };
   return Painting;
 }());
@@ -390,47 +399,47 @@ randomShape = function(){
 targetData = null;
 bestData = null;
 breed = function(){
-  var startTime, keep, i, i$, len$, painting, ref$, mom, child, dad;
+  var startTime, i$, ref$, len$, i, n, mom, child, dad, best, painting;
   startTime = Date.now();
-  paintings.sort(function(a, b){
-    return a.score - b.score || a.shapes.length - b.shapes.length;
-  });
-  keep = paintings.splice(0, 1);
-  if (keep[0].score != null) {
-    keep[0].paintDiff(document.getElementById('diff'));
-  }
-  paintings.splice(paintings.length / 2);
-  while (keep.length < generationKeep) {
-    i = Math.floor(highWeightedRandom() * paintings.length);
-    keep.push(paintings.splice(i, 1)[0]);
-  }
-  paintings = keep;
-  paintings.sort(function(a, b){
-    return a.score - b.score || a.shapes.length - b.shapes.length;
-  });
-  for (i$ = 0, len$ = paintings.length; i$ < len$; ++i$) {
-    i = i$;
-    painting = paintings[i$];
-    painting.age = (painting.age || 0) + 1;
-    painting.show(i);
-  }
   for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
     i = ref$[i$];
-    mom = paintings[Math.floor(Math.random() * generationKeep)];
+    n = randomPainting();
+    mom = paintings[n];
     child = mom.mutate();
-    paintings.push(child);
-    child.show(paintings.length - 1);
-  }
-  for (i$ = 0, len$ = (ref$ = (fn1$())).length; i$ < len$; ++i$) {
-    i = ref$[i$];
-    mom = paintings[Math.floor(Math.random() * generationKeep)];
-    dad = paintings[Math.floor(Math.random() * generationKeep)];
-    while (mom === dad) {
-      dad = paintings[Math.floor(Math.random() * generationKeep)];
+    child.show(mutantBoxes[i]);
+    if (child.score < mom.score) {
+      paintings[n] = child;
     }
-    child = mom.cross(dad);
-    paintings.push(child);
-    child.show(paintings.length - 1);
+  }
+  if (generationNumber >= generationStartCross) {
+    for (i$ = 0, len$ = (ref$ = (fn1$())).length; i$ < len$; ++i$) {
+      i = ref$[i$];
+      mom = randomPainting();
+      dad = randomPainting();
+      while (mom === dad) {
+        dad = randomPainting();
+      }
+      child = paintings[mom].cross(paintings[dad]);
+      child.show(crossBoxes[i]);
+      if (child.score < mom.score) {
+        paintings[mom] = child;
+      } else if (child.score < dad.score) {
+        paintings[dad] = child;
+      }
+    }
+  }
+  paintings.sort(function(a, b){
+    return a.score - b.score || a.shapes.length - b.shapes.length;
+  });
+  best = paintings[0];
+  if (best.score != null) {
+    best.paintDiff(document.getElementById('diff'));
+  }
+  for (i$ = 0, len$ = (ref$ = paintings).length; i$ < len$; ++i$) {
+    i = i$;
+    painting = ref$[i$];
+    painting.age = (painting.age || 0) + 1;
+    painting.show(survivorBoxes[i]);
   }
   ++generationNumber;
   cumulativeTime += Date.now() - startTime;
@@ -493,17 +502,19 @@ paintWeightMap = function(){
   return ctx.putImageData(imageData, 0, 0);
 };
 restart = function(){
-  var i$, ref$, len$, i, painting;
-  paintings = [];
+  var res$, i$, ref$, len$, n;
+  cumulativeTime = 0;
+  generationNumber = 0;
+  res$ = [];
   for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
-    i = ref$[i$];
-    painting = new Painting();
-    paintings.push(painting);
+    n = ref$[i$];
+    res$.push(new Painting());
   }
+  paintings = res$;
   return setTimeout(breed, 0);
   function fn$(){
     var i$, to$, results$ = [];
-    for (i$ = 0, to$ = generationSize - 1; i$ <= to$; ++i$) {
+    for (i$ = 1, to$ = generationKeep; i$ <= to$; ++i$) {
       results$.push(i$);
     }
     return results$;
@@ -520,7 +531,7 @@ createBox = function(cls){
   return box;
 };
 window.addEventListener('load', function(){
-  var boxesElement, target, i, i$, ref$, len$, n, img, imageSelect;
+  var boxesElement, target, i, i$, ref$, len$, n, box, img, imageSelect;
   boxesElement = document.getElementById('boxes');
   target = document.getElementById('target');
   target.width = imageWidth;
@@ -528,15 +539,21 @@ window.addEventListener('load', function(){
   i = 0;
   for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
     n = ref$[i$];
-    boxesElement.appendChild(boxes[i++] = createBox('survivor'));
+    box = createBox('survivor');
+    boxesElement.appendChild(box);
+    survivorBoxes.push(box);
   }
   for (i$ = 0, len$ = (ref$ = (fn1$())).length; i$ < len$; ++i$) {
     n = ref$[i$];
-    boxesElement.appendChild(boxes[i++] = createBox('mutant'));
+    box = createBox('mutant');
+    boxesElement.appendChild(box);
+    mutantBoxes.push(box);
   }
   for (i$ = 0, len$ = (ref$ = (fn2$())).length; i$ < len$; ++i$) {
     n = ref$[i$];
-    boxesElement.appendChild(boxes[i++] = createBox('crossbreed'));
+    box = createBox('cross');
+    boxesElement.appendChild(box);
+    crossBoxes.push(box);
   }
   img = new Image();
   img.addEventListener('load', function(){
@@ -558,9 +575,9 @@ window.addEventListener('load', function(){
   });
   imageSelect = document.getElementById('imageSelect');
   imageSelect.selectedIndex = Math.floor(Math.random() * imageSelect.options.length);
-  img.src = imageSelect.value;
+  img.src = 'images/' + imageSelect.value;
   return imageSelect.addEventListener('change', function(){
-    return img.src = imageSelect.value;
+    return img.src = 'images/' + imageSelect.value;
   });
   function fn$(){
     var i$, to$, results$ = [];
