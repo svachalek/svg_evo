@@ -97,9 +97,9 @@ class Painting
     canvas = box.children[0]
     @paint canvas
     unless @score then @diffScore canvas
-    label = Math.floor(@score * 10000) + ' [' + @shapes.length + ']'
+    label = '\u0394' + Math.floor(@score * 10000) + ' #' + @shapes.length
     if @age
-      label += ' (' + @origin + @age + ')'
+      label += ' ' + @origin + @age
     setText box.children[1], label
 
   diffScore: (canvas) ->
