@@ -1,7 +1,5 @@
-svgdna
-======
-
 Vector Painting Evolution
+=========================
 
 [This page][1] starts by creating a set of paintings that each contain one oval
 or triangle. These paintings are mutated by adding, removing, or altering 
