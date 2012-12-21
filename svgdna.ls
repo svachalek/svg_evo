@@ -24,7 +24,6 @@ generationKeep = 4
 generationMutate = 15
 generationCross = 7
 generationSize = -> generationKeep + generationMutate + generationCross
-generationStartCross = 0
 generationNumber = 0
 cumulativeTime = 0
 
@@ -318,18 +317,17 @@ breed = !->
     child.show mutantBoxes[i]
     if child.score < mom.score
       paintings[n] = child
-  if generationNumber >= generationStartCross
-    for i in [0 to generationCross - 1]
-      mom = randomPainting!
+  for i in [0 to generationCross - 1]
+    mom = randomPainting!
+    dad = randomPainting!
+    while mom == dad
       dad = randomPainting!
-      while mom == dad
-         dad = randomPainting!
-      child = paintings[mom].cross paintings[dad]
-      child.show crossBoxes[i]
-      if child.score < mom.score
-        paintings[mom] = child
-      else if child.score < dad.score
-        paintings[dad] = child
+    child = paintings[mom].cross paintings[dad]
+    child.show crossBoxes[i]
+    if child.score < mom.score
+      paintings[mom] = child
+    else if child.score < dad.score
+      paintings[dad] = child
   # show the best
   paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
   best = paintings[0]
