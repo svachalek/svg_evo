@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with SVGDNA.  If not, see <http://www.gnu.org/licenses/>
 
-cumulativeTime = 0
-
 imageWidth = 100
 imageHeight = 100
 imageShapes = 100
@@ -27,6 +25,7 @@ generationMutate = 25
 generationCross = 15
 generationSize = -> generationKeep + generationMutate + generationCross
 generationNumber = 0
+cumulativeTime = 0
 
 paintings = []
 boxes = []
@@ -385,6 +384,8 @@ paintWeightMap = ->
   ctx.putImageData imageData, 0, 0
 
 restart = ->
+  cumulativeTime := 0
+  generationNumber := 0
   paintings := []
   for i in [0 to generationSize! - 1]
     painting = new Painting!
