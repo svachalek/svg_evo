@@ -101,3 +101,9 @@ label {
   display:          inline-block;
   margin-left:      1em;
 }
+
+em {
+  font-weight:      bold;
+  font-style:       italic;
+  color:            #7f7f9f;
+}

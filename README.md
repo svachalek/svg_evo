@@ -11,3 +11,12 @@ The best image and a selection of the others are retained, the rest are thrown o
 and the process repeats.
 
 The page can be seen live [here](http://static.svachalek.net/vector/index.html).
+
+This is entirely client-side code. To build, just run:
+
+  livescript -c svgdna.ls
+  python -m SimpleHTTPServer
+
+And navigate to [http://localhost:8000]() in your browser.
+
+
