@@ -159,10 +159,7 @@ Painting = (function(){
     if (!this.score) {
       this.diffScore(canvas);
     }
-    label = '@' + Math.floor(this.score * 10000) + ' #' + this.shapes.length;
-    if (this.age) {
-      label += ' ' + this.origin + this.age;
-    }
+    label = '@' + Math.floor(this.score * 10000) + ' #' + this.shapes.length + ' ' + this.origin + (this.age || '');
     return setText(box.children[1], label);
   };
   prototype.diffScore = function(canvas){

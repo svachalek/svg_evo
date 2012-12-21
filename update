@@ -3,4 +3,6 @@ cp ~/svgdna/*.css .
 cp ~/svgdna/images/* images
 cp ~/svgdna/*.js .
 git add .
+git commit -m 'update to latest build'
+git push origin gh-pages
 
