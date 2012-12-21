@@ -97,7 +97,7 @@ class Painting
     canvas = box.children[0]
     @paint canvas
     unless @score then @diffScore canvas
-    label = '\u0394' + Math.floor(@score * 10000) + ' #' + @shapes.length
+    label = '@' + Math.floor(@score * 10000) + ' #' + @shapes.length
     if @age
       label += ' ' + @origin + @age
     setText box.children[1], label
@@ -105,15 +105,34 @@ class Painting
   diffScore: (canvas) ->
     ctx = canvas.getContext '2d'
     score = 0
+    points = []
     data = (ctx.getImageData 0, 0, imageWidth, imageHeight).data
     y = 0
     while y < imageHeight
       x = 0
       while x < imageWidth
-        score += (diffPoint data, x, y, targetData, x, y) * weightMap[x + (y * imageWidth)]
+        diff = (diffPoint data, x, y, targetData, x, y)
+        points.push diff
+        score += diff * weightMap[x + (y * imageWidth)]
         ++x
       ++y
     @score = score / (imageHeight * imageWidth)
+    @points = points
+
+  paintDiff: (canvas) ->
+    canvas.width = imageWidth
+    canvas.height = imageHeight
+    ctx = canvas.getContext '2d'
+    imageData = ctx.createImageData(imageWidth, imageHeight)
+    data = imageData.data
+    i = 0
+    for point in @points
+      color = Math.floor (1 - point) * 255
+      data[i++] = color # r
+      data[i++] = color # g
+      data[i++] = color # b
+      data[i++] = 255   # a
+    ctx.putImageData imageData, 0, 0
 
   remove: !->
     if @shapes.length > 1
@@ -276,6 +295,7 @@ breed = !->
   startTime = Date.now!
   paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
   keep = paintings.splice(0, 1)
+  if keep[0].score? then keep[0].paintDiff document.getElementById 'diff'
   paintings.splice(paintings.length / 2)
   while keep.length < generationKeep
     i = Math.floor highWeightedRandom! * paintings.length
