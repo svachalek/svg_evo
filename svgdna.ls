@@ -412,7 +412,8 @@ window.addEventListener 'load', ->
     generateWeightMap!
     restart!
 
-  imageSelect = document.getElementById 'image'
+  imageSelect = document.getElementById 'imageSelect'
+  imageSelect.selectedIndex = Math.floor Math.random! * imageSelect.options.length
   img.src = imageSelect.value
   imageSelect.addEventListener 'change', ->
     img.src = imageSelect.value
