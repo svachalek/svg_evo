@@ -14,8 +14,9 @@
   cross-bred with other paintings. The results are compared to the image labeled <em>Target</em>,
   paying particular attention to areas shown in the image labeled <em>Weights</em>.
   The dark areas in the <em>Differences</em> image show where the target image is most different
-  from the best solution. The best image and a selection of the others are retained, the
-  rest are thrown out, and the process repeats.
+  from the best solution. When a mutation is better than its parent, it replaces it; when a
+  cross is better than one if its parents it will replace it. The process repeats as fast as
+  possible, and after 2000 or 3000 generations you should begin to recognize the result.
 
 <table id='stats'>
   <tr><th>Target image:    <td>
