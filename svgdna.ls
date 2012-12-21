@@ -25,7 +25,7 @@ imageRadius = -> (Math.sqrt imageWidth * imageWidth + imageHeight * imageHeight)
 generationKeep = 10
 generationMutate = 25
 generationCross = 15
-generationSize = generationKeep + generationMutate + generationCross
+generationSize = -> generationKeep + generationMutate + generationCross
 generationNumber = 0
 
 paintings = []
@@ -386,7 +386,7 @@ paintWeightMap = ->
 
 restart = ->
   paintings := []
-  for i in [0 to generationSize - 1]
+  for i in [0 to generationSize! - 1]
     painting = new Painting!
     paintings.push painting
   setTimeout breed, 0
