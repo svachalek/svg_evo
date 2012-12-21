@@ -1,4 +1,4 @@
-var imageWidth, imageHeight, imageShapes, imageRadius, generationKeep, generationMutate, generationCross, generationSize, generationStartCross, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomRadius, randomByte, randomPainting, clamp, setText, diffPoint, Point, Color, Painting, Shape, Triangle, Oval, randomShape, targetData, bestData, breed, weightMap, generateWeightMap, paintWeightMap, restart, createBox;
+var imageWidth, imageHeight, imageShapes, imageRadius, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomRadius, randomByte, randomPainting, clamp, setText, diffPoint, Point, Color, Painting, Shape, Triangle, Oval, randomShape, targetData, bestData, breed, weightMap, generateWeightMap, paintWeightMap, restart, createBox;
 imageWidth = 100;
 imageHeight = 100;
 imageShapes = 100;
@@ -11,7 +11,6 @@ generationCross = 7;
 generationSize = function(){
   return generationKeep + generationMutate + generationCross;
 };
-generationStartCross = 0;
 generationNumber = 0;
 cumulativeTime = 0;
 paintings = [];
@@ -408,21 +407,19 @@ breed = function(){
       paintings[n] = child;
     }
   }
-  if (generationNumber >= generationStartCross) {
-    for (i$ = 0, len$ = (ref$ = (fn1$())).length; i$ < len$; ++i$) {
-      i = ref$[i$];
-      mom = randomPainting();
+  for (i$ = 0, len$ = (ref$ = (fn1$())).length; i$ < len$; ++i$) {
+    i = ref$[i$];
+    mom = randomPainting();
+    dad = randomPainting();
+    while (mom === dad) {
       dad = randomPainting();
-      while (mom === dad) {
-        dad = randomPainting();
-      }
-      child = paintings[mom].cross(paintings[dad]);
-      child.show(crossBoxes[i]);
-      if (child.score < mom.score) {
-        paintings[mom] = child;
-      } else if (child.score < dad.score) {
-        paintings[dad] = child;
-      }
+    }
+    child = paintings[mom].cross(paintings[dad]);
+    child.show(crossBoxes[i]);
+    if (child.score < mom.score) {
+      paintings[mom] = child;
+    } else if (child.score < dad.score) {
+      paintings[dad] = child;
     }
   }
   paintings.sort(function(a, b){
