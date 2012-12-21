@@ -431,7 +431,7 @@ window.addEventListener 'load', ->
 
   imageSelect = document.getElementById 'imageSelect'
   imageSelect.selectedIndex = Math.floor Math.random! * imageSelect.options.length
-  img.src = imageSelect.value
+  img.src = 'images/' + imageSelect.value
   imageSelect.addEventListener 'change', ->
-    img.src = imageSelect.value
+    img.src = 'images/' + imageSelect.value
 
