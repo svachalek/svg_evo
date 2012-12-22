@@ -20,7 +20,7 @@ imageHeight = 100
 imageShapes = 100
 imageRadius = -> (Math.sqrt imageWidth * imageWidth + imageHeight * imageHeight) / 2
 
-shapeSize = 40
+shapeSize = 20
 
 generationKeep = 4
 generationMutate = 15
@@ -62,7 +62,7 @@ class Point
     return this
 
   mutate: ->
-    r = Math.floor Math.random! * shapeSize
+    r = Math.floor Math.random! * shapeSize * 2
     a = Math.random! * Math.PI * 2
     dx = r * Math.cos a
     dy = r * Math.sin a
@@ -235,7 +235,7 @@ class Shape
     @color2 = new Color!
 
   gradient: (ctx, color1, color2) ->
-    g = ctx.createLinearGradient -shapeSize / 2, 0, shapeSize / 2, 0
+    g = ctx.createLinearGradient -shapeSize, 0, shapeSize, 0
     g.addColorStop 0, color1.fillStyle!
     g.addColorStop 1, color2.fillStyle!
     return g
@@ -249,9 +249,9 @@ class Triangle extends Shape
     ctx.rotate @rotate
     ctx.scale @sx, @sy
     ctx.beginPath!
-    ctx.moveTo -shapeSize / 2, 0
-    ctx.lineTo shapeSize / 2, -shapeSize / 2 * Math.sin @a
-    ctx.lineTo shapeSize / 2,  shapeSize / 2 * Math.sin @a
+    ctx.moveTo -shapeSize, 0
+    ctx.lineTo  shapeSize, -shapeSize * Math.sin @a
+    ctx.lineTo  shapeSize,  shapeSize * Math.sin @a
     ctx.closePath!
     ctx.fill!
     ctx.restore!
@@ -286,7 +286,7 @@ class Oval extends Shape
     ctx.rotate @rotate
     ctx.scale @sx, @sy
     ctx.beginPath!
-    ctx.arc 0, 0, shapeSize / 2, 0, 2 * Math.PI, false
+    ctx.arc 0, 0, shapeSize, 0, 2 * Math.PI, false
     ctx.closePath!
     ctx.fill!
     ctx.restore!
