@@ -116,7 +116,7 @@ class Painting
     canvas = box.children[0]
     @paint canvas
     unless @score then @diffScore canvas
-    label = '@' + Math.floor(@score * 10000) + ' #' + @shapes.length + ' ' + @origin + (@age || '')
+    label = Math.floor(@score) + ' ' + @origin + (@age || '')
     setText box.children[1], label
 
   diffScore: (canvas) ->
@@ -135,7 +135,7 @@ class Painting
       diff = Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
       points.push diff
       score += diff * weightMap[w++]
-    @score = score / (imageHeight * imageWidth)
+    @score = score
     @points = points
 
   paintDiff: (canvas) ->
