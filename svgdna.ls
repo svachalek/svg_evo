@@ -317,10 +317,10 @@ breed = !->
       dad = randomPainting!
     child = paintings[mom].cross paintings[dad]
     child.show crossBoxes[i]
-    if child.score < mom.score
+    if child.score < paintings[mom].score
       paintings[mom] = child
       attempt 'cross', true
-    else if child.score < dad.score
+    else if child.score < paintings[dad].score
       paintings[dad] = child
       attempt 'cross', true
     else
