@@ -17,6 +17,13 @@ body {
   margin:           1em;
 }
 
+#target-large, #best-large {
+  width:            300px;
+  height:           300px;
+  border:           8px ridge #666;
+  margin:           8px;
+}
+
 #boxes {
   font-size:        0;
 }

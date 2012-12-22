@@ -102,19 +102,22 @@ class Painting
     @origin = 'R'
     return this
 
-  paint: !(canvas) ->
-    canvas.width = imageWidth
-    canvas.height = imageHeight
+  paint: !(canvas, scale) ->
+    canvas.width = imageWidth * scale
+    canvas.height = imageHeight * scale
     ctx = canvas.getContext '2d'
+    ctx.save!
+    ctx.scale scale, scale
     # lay down an opaque white, a clear background looks white but compares black
     ctx.fillStyle = '#ffffff'
     ctx.fillRect 0, 0, imageWidth, imageHeight
     for shape in @shapes
       shape.paint ctx
+    ctx.restore!
 
   show: (box) ->
     canvas = box.children[0]
-    @paint canvas
+    @paint canvas, 1
     unless @score then @diffScore canvas
     label = Math.floor(@score) + ' ' + @origin + ' ' + (@age || '')
     setText box.children[1], label
@@ -323,6 +326,8 @@ breed = !->
       paintings[dad] = child
   # show the best
   paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
+  if paintings[0] != best
+    paintings[0].paint (document.getElementById 'best-large'), 3 * (window.devicePixelRatio || 1);
   best = paintings[0]
   if best.score? then best.paintDiff document.getElementById 'diff'
   for painting, i in paintings
@@ -396,6 +401,8 @@ createBox = (cls) ->
 window.addEventListener 'load', ->
   boxesElement = document.getElementById('boxes')
   target = document.getElementById('target')
+  targetLarge = document.getElementById('target-large')
+  bestLarge = document.getElementById('best-large')
   target.width = imageWidth
   target.height = imageHeight
   i = 0
@@ -420,6 +427,8 @@ window.addEventListener 'load', ->
     else
       imageHeight := Math.floor img.height / img.width * 100
       imageWidth := 100
+    bestLarge.style.width = targetLarge.style.width = imageWidth * 3 + 'px'
+    bestLarge.style.height = targetLarge.style.height = imageHeight * 3 + 'px'
     target.width = imageWidth
     target.height = imageHeight
     ctx = target.getContext '2d'
@@ -430,7 +439,7 @@ window.addEventListener 'load', ->
 
   imageSelect = document.getElementById 'imageSelect'
   imageSelect.selectedIndex = Math.floor Math.random! * imageSelect.options.length
-  img.src = 'images/' + imageSelect.value
+  targetLarge.src = img.src = 'images/' + imageSelect.value
   imageSelect.addEventListener 'change', ->
-    img.src = 'images/' + imageSelect.value
+    targetLarge.src = img.src = 'images/' + imageSelect.value
 
