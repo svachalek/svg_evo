@@ -15,12 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with SVGDNA.  If not, see <http://www.gnu.org/licenses/>
 
-imageWidth = 100
-imageHeight = 100
+baseSize = 100
+shapeSize = 20
+
+imageWidth = baseSize
+imageHeight = baseSize
 imageShapes = 100
 imageRadius = -> (Math.sqrt imageWidth * imageWidth + imageHeight * imageHeight) / 2
-
-shapeSize = 20
 
 generationKeep = 4
 generationMutate = 15
@@ -41,7 +42,10 @@ randomX = -> Math.floor Math.random! * imageWidth
 randomY = -> Math.floor Math.random! * imageHeight
 randomByte = -> Math.floor Math.random! * 256
 randomPainting = -> Math.floor Math.random! * paintings.length
+randomSign = -> if Math.random! < 0.5 then -1 else 1
+
 clamp = (min, n, max) -> if n < min then min else if n > max then max else n
+plusOrMinus = (min, max) -> randomSign! * (Math.random! * (max - min) + min)
 
 setText = (element, text) -> element.innerText = element.textContent = text
 
@@ -62,7 +66,7 @@ class Point
     return this
 
   mutate: ->
-    r = Math.floor Math.random! * shapeSize * 2
+    r = Math.floor plusOrMinus(shapeSize / 2, shapeSize * 2)
     a = Math.random! * Math.PI * 2
     dx = r * Math.cos a
     dy = r * Math.sin a
@@ -85,13 +89,13 @@ class Color
     child = new Color @r, @g, @b, @a
     roll = Math.random!
     if roll < 0.25
-      child.r = Math.floor clamp(0, @r + Math.random! * 10 - 5, 255)
+      child.r = Math.floor clamp(0, @r + plusOrMinus(8, 32), 255)
     else if roll < 0.50
-      child.g = Math.floor clamp(0, @g + Math.random! * 10 - 5, 255)
+      child.g = Math.floor clamp(0, @g + plusOrMinus(8, 32), 255)
     else if roll < 0.75
-      child.b = Math.floor clamp(0, @b + Math.random! * 10 - 5, 255)
+      child.b = Math.floor clamp(0, @b + plusOrMinus(8, 32), 255)
     else
-      child.a = clamp(0, @a + Math.random! / 10 - 0.05, 1)
+      child.a = clamp(0, @a + plusOrMinus(0.05, 0.20), 1)
     return child
 
 class Painting
@@ -192,18 +196,18 @@ class Painting
   mutate: ->
     child = new Painting @shapes
     roll = Math.random!
-    if roll < 0.10
+    if roll < 0.01
       child.origin = '+'
       child.add!
-    else if roll < 0.20
-      child.origin = '-'
-      child.remove!
-    else if roll < 0.30
-      child.origin = 'X'
-      child.swap!
-    else if roll < 0.40
+    else if roll < 0.02
       child.origin = 'F'
       child.fork!
+    else if roll < 0.05
+      child.origin = '-'
+      child.remove!
+    else if roll < 0.10
+      child.origin = 'X'
+      child.swap!
     else
       child.mutateShape!
     return child
@@ -231,9 +235,9 @@ class Shape
   randomize: !->
     @sx = Math.random! + 0.5
     @sy = Math.random! + 0.5
+    @sx = @sy = 1
     @rotate = Math.random! * 2 * Math.PI
     @p = new Point!
-    @a = Math.random! * Math.PI / 4
     @color1 = new Color!
     @color2 = new Color!
 
@@ -255,22 +259,19 @@ class Shape
   mutate: ->
     roll = Math.random!
     child = @copy!
-    if roll < 1/7
-      child.rotate += (lowWeightedRandom! - 0.5) * 2 * Math.PI
+    if roll < 1/6
+      child.rotate += plusOrMinus(Math.PI / 16, Math.PI / 4)
       child.origin = 'R'
-    else if roll < 2/7
-      child.a += (lowWeightedRandom! - 0.5) * Math.PI / 16
-      child.origin = 'A'
-    else if roll < 3/7
-      child.sx += Math.random! - 0.5
+    else if roll < 2/6
+      child.sx += plusOrMinus(0.1, 0.5)
       child.origin = 'W'
-    else if roll < 4/7
-      child.sy += Math.random! - 0.5
+    else if roll < 3/6
+      child.sy += plusOrMinus(0.1, 0.5)
       child.origin = 'H'
-    else if roll < 5/7
+    else if roll < 4/6
       child.p = @p.mutate!
       child.origin = 'P'
-    else if roll < 6/7
+    else if roll < 5/6
       child.color1 = @color1.mutate!
       child.origin = '{'
     else
@@ -283,19 +284,20 @@ class Triangle extends Shape
   copy: -> new Triangle this
 
   paintPath: !(ctx) ->
-    ctx.moveTo -shapeSize, 0
-    ctx.lineTo  shapeSize, -shapeSize * Math.sin @a
-    ctx.lineTo  shapeSize,  shapeSize * Math.sin @a
+    r = shapeSize * 2 * Math.sqrt(Math.PI) / Math.pow(3, 3/4)
+    ctx.moveTo -r, 0
+    ctx.lineTo  r * Math.cos(Math.PI / 3), -r * Math.sin(Math.PI / 3)
+    ctx.lineTo  r * Math.cos(Math.PI / 3),  r * Math.sin(Math.PI / 3)
 
 class Oval extends Shape
+
+  copy: -> new Oval this
 
   paintPath: !(ctx) ->
     ctx.arc 0, 0, shapeSize, 0, 2 * Math.PI, false
 
-  copy: -> new Oval this
-
 randomShape = ->
-  if Math.random! < 0.75
+  if Math.random! < 0.50
     new Triangle!
   else
     new Oval!
@@ -422,11 +424,11 @@ window.addEventListener 'load', ->
   img = new Image!
   img.addEventListener 'load', ->
     if img.width > img.height
-      imageWidth := Math.floor img.width / img.height * 100
-      imageHeight := 100
+      imageWidth := Math.floor img.width / img.height * baseSize
+      imageHeight := baseSize
     else
-      imageHeight := Math.floor img.height / img.width * 100
-      imageWidth := 100
+      imageHeight := Math.floor img.height / img.width * baseSize
+      imageWidth := baseSize
     bestLarge.style.width = targetLarge.style.width = imageWidth * 3 + 'px'
     bestLarge.style.height = targetLarge.style.height = imageHeight * 3 + 'px'
     target.width = imageWidth
