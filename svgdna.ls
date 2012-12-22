@@ -234,29 +234,29 @@ class Shape
     @color1 = new Color!
     @color2 = new Color!
 
-  gradient: (ctx, color1, color2) ->
-    g = ctx.createLinearGradient -shapeSize, 0, shapeSize, 0
-    g.addColorStop 0, color1.fillStyle!
-    g.addColorStop 1, color2.fillStyle!
-    return g
-
-class Triangle extends Shape
-
   paint: !(ctx) ->
     ctx.save!
-    ctx.fillStyle = @gradient ctx, @color1, @color2
+    gradient = ctx.createLinearGradient -shapeSize, 0, shapeSize, 0
+    gradient.addColorStop 0, @color1.fillStyle!
+    gradient.addColorStop 1, @color2.fillStyle!
+    ctx.fillStyle = gradient
     ctx.translate @p.x, @p.y
     ctx.rotate @rotate
     ctx.scale @sx, @sy
     ctx.beginPath!
-    ctx.moveTo -shapeSize, 0
-    ctx.lineTo  shapeSize, -shapeSize * Math.sin @a
-    ctx.lineTo  shapeSize,  shapeSize * Math.sin @a
+    @paintPath ctx
     ctx.closePath!
     ctx.fill!
     ctx.restore!
 
+class Triangle extends Shape
+
   copy: -> new Triangle this
+
+  paintPath: !(ctx) ->
+    ctx.moveTo -shapeSize, 0
+    ctx.lineTo  shapeSize, -shapeSize * Math.sin @a
+    ctx.lineTo  shapeSize,  shapeSize * Math.sin @a
 
   mutate: ->
     roll = Math.random!
@@ -279,17 +279,8 @@ class Triangle extends Shape
 
 class Oval extends Shape
 
-  paint: !(ctx) ->
-    ctx.save!
-    ctx.fillStyle = @gradient ctx, @color1, @color2
-    ctx.translate @p.x, @p.y
-    ctx.rotate @rotate
-    ctx.scale @sx, @sy
-    ctx.beginPath!
+  paintPath: !(ctx) ->
     ctx.arc 0, 0, shapeSize, 0, 2 * Math.PI, false
-    ctx.closePath!
-    ctx.fill!
-    ctx.restore!
 
   copy: -> new Oval this
 
