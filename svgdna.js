@@ -1,11 +1,12 @@
-var imageWidth, imageHeight, imageShapes, imageRadius, shapeSize, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomByte, randomPainting, clamp, setText, diffPoint, Point, Color, Painting, Shape, Triangle, Oval, randomShape, targetData, bestData, breed, weightMap, generateWeightMap, paintWeightMap, restart, createBox;
-imageWidth = 100;
-imageHeight = 100;
+var baseSize, shapeSize, imageWidth, imageHeight, imageShapes, imageRadius, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomByte, randomPainting, randomSign, clamp, plusOrMinus, setText, diffPoint, Point, Color, Painting, Shape, triangle, oval, targetData, bestData, breed, weightMap, generateWeightMap, paintWeightMap, restart, createBox;
+baseSize = 100;
+shapeSize = 20;
+imageWidth = baseSize;
+imageHeight = baseSize;
 imageShapes = 100;
 imageRadius = function(){
   return Math.sqrt(imageWidth * imageWidth + imageHeight * imageHeight) / 2;
 };
-shapeSize = 20;
 generationKeep = 4;
 generationMutate = 15;
 generationCross = 7;
@@ -36,6 +37,13 @@ randomByte = function(){
 randomPainting = function(){
   return Math.floor(Math.random() * paintings.length);
 };
+randomSign = function(){
+  if (Math.random() < 0.5) {
+    return -1;
+  } else {
+    return 1;
+  }
+};
 clamp = function(min, n, max){
   if (n < min) {
     return min;
@@ -44,6 +52,9 @@ clamp = function(min, n, max){
   } else {
     return n;
   }
+};
+plusOrMinus = function(min, max){
+  return randomSign() * (Math.random() * (max - min) + min);
 };
 setText = function(element, text){
   return element.innerText = element.textContent = text;
@@ -74,7 +85,7 @@ Point = (function(){
   };
   prototype.mutate = function(){
     var r, a, dx, dy;
-    r = Math.floor(Math.random() * shapeSize * 2);
+    r = Math.floor(plusOrMinus(shapeSize / 2, shapeSize * 2));
     a = Math.random() * Math.PI * 2;
     dx = r * Math.cos(a);
     dy = r * Math.sin(a);
@@ -109,13 +120,13 @@ Color = (function(){
     child = new Color(this.r, this.g, this.b, this.a);
     roll = Math.random();
     if (roll < 0.25) {
-      child.r = Math.floor(clamp(0, this.r + Math.random() * 10 - 5, 255));
+      child.r = Math.floor(clamp(0, this.r + plusOrMinus(8, 32), 255));
     } else if (roll < 0.50) {
-      child.g = Math.floor(clamp(0, this.g + Math.random() * 10 - 5, 255));
+      child.g = Math.floor(clamp(0, this.g + plusOrMinus(8, 32), 255));
     } else if (roll < 0.75) {
-      child.b = Math.floor(clamp(0, this.b + Math.random() * 10 - 5, 255));
+      child.b = Math.floor(clamp(0, this.b + plusOrMinus(8, 32), 255));
     } else {
-      child.a = clamp(0, this.a + Math.random() / 10 - 0.05, 1);
+      child.a = clamp(0, this.a + plusOrMinus(0.05, 0.20), 1);
     }
     return child;
   };
@@ -133,7 +144,7 @@ Painting = (function(){
     }
   }
   prototype.randomize = function(){
-    this.shapes = [randomShape()];
+    this.shapes = [new Shape()];
     this.origin = 'R';
     return this;
   };
@@ -213,7 +224,7 @@ Painting = (function(){
       this.shapes.splice(0, 1);
     }
     i = Math.floor(highWeightedRandom() * this.shapes.length);
-    this.shapes.splice(i, 0, randomShape());
+    this.shapes.splice(i, 0, new Shape());
   };
   prototype.fork = function(){
     var i;
@@ -244,18 +255,18 @@ Painting = (function(){
     var child, roll;
     child = new Painting(this.shapes);
     roll = Math.random();
-    if (roll < 0.10) {
+    if (roll < 0.01) {
       child.origin = '+';
       child.add();
-    } else if (roll < 0.20) {
-      child.origin = '-';
-      child.remove();
-    } else if (roll < 0.30) {
-      child.origin = 'X';
-      child.swap();
-    } else if (roll < 0.40) {
+    } else if (roll < 0.02) {
       child.origin = 'F';
       child.fork();
+    } else if (roll < 0.05) {
+      child.origin = '-';
+      child.remove();
+    } else if (roll < 0.10) {
+      child.origin = 'X';
+      child.swap();
     } else {
       child.mutateShape();
     }
@@ -295,11 +306,12 @@ Shape = (function(){
   prototype.randomize = function(){
     this.sx = Math.random() + 0.5;
     this.sy = Math.random() + 0.5;
+    this.sx = this.sy = 1;
     this.rotate = Math.random() * 2 * Math.PI;
     this.p = new Point();
-    this.a = Math.random() * Math.PI / 4;
     this.color1 = new Color();
     this.color2 = new Color();
+    this.paintPath = Math.random() < 0.50 ? triangle : oval;
   };
   prototype.paint = function(ctx){
     var gradient;
@@ -319,24 +331,24 @@ Shape = (function(){
   };
   prototype.mutate = function(){
     var roll, child;
-    roll = Math.random();
-    child = this.copy();
-    if (roll < 1 / 7) {
-      child.rotate += (lowWeightedRandom() - 0.5) * 2 * Math.PI;
+    roll = Math.random() * 10;
+    child = new Shape(this);
+    if (roll < 1) {
+      child.paintPath = this.paintPath === triangle ? oval : triangle;
+      child.origin = 'O';
+    } else if (roll < 2) {
+      child.rotate += plusOrMinus(Math.PI / 16, Math.PI / 4);
       child.origin = 'R';
-    } else if (roll < 2 / 7) {
-      child.a += (lowWeightedRandom() - 0.5) * Math.PI / 16;
-      child.origin = 'A';
-    } else if (roll < 3 / 7) {
-      child.sx += Math.random() - 0.5;
+    } else if (roll < 3) {
+      child.sx += plusOrMinus(0.1, 0.5);
       child.origin = 'W';
-    } else if (roll < 4 / 7) {
-      child.sy += Math.random() - 0.5;
+    } else if (roll < 4) {
+      child.sy += plusOrMinus(0.1, 0.5);
       child.origin = 'H';
-    } else if (roll < 5 / 7) {
+    } else if (roll < 6) {
       child.p = this.p.mutate();
       child.origin = 'P';
-    } else if (roll < 6 / 7) {
+    } else if (roll < 8) {
       child.color1 = this.color1.mutate();
       child.origin = '{';
     } else {
@@ -347,40 +359,15 @@ Shape = (function(){
   };
   return Shape;
 }());
-Triangle = (function(superclass){
-  var prototype = extend$((import$(Triangle, superclass).displayName = 'Triangle', Triangle), superclass).prototype, constructor = Triangle;
-  prototype.copy = function(){
-    return new Triangle(this);
-  };
-  prototype.paintPath = function(ctx){
-    ctx.moveTo(-shapeSize, 0);
-    ctx.lineTo(shapeSize, -shapeSize * Math.sin(this.a));
-    ctx.lineTo(shapeSize, shapeSize * Math.sin(this.a));
-  };
-  function Triangle(){
-    Triangle.superclass.apply(this, arguments);
-  }
-  return Triangle;
-}(Shape));
-Oval = (function(superclass){
-  var prototype = extend$((import$(Oval, superclass).displayName = 'Oval', Oval), superclass).prototype, constructor = Oval;
-  prototype.paintPath = function(ctx){
-    ctx.arc(0, 0, shapeSize, 0, 2 * Math.PI, false);
-  };
-  prototype.copy = function(){
-    return new Oval(this);
-  };
-  function Oval(){
-    Oval.superclass.apply(this, arguments);
-  }
-  return Oval;
-}(Shape));
-randomShape = function(){
-  if (Math.random() < 0.75) {
-    return new Triangle();
-  } else {
-    return new Oval();
-  }
+triangle = function(ctx){
+  var r;
+  r = shapeSize * 2 * Math.sqrt(Math.PI) / Math.pow(3, 3 / 4);
+  ctx.moveTo(-r, 0);
+  ctx.lineTo(r * Math.cos(Math.PI / 3), -r * Math.sin(Math.PI / 3));
+  ctx.lineTo(r * Math.cos(Math.PI / 3), r * Math.sin(Math.PI / 3));
+};
+oval = function(ctx){
+  ctx.arc(0, 0, shapeSize, 0, 2 * Math.PI, false);
 };
 targetData = null;
 bestData = null;
@@ -548,11 +535,11 @@ window.addEventListener('load', function(){
   img.addEventListener('load', function(){
     var ctx;
     if (img.width > img.height) {
-      imageWidth = Math.floor(img.width / img.height * 100);
-      imageHeight = 100;
+      imageWidth = Math.floor(img.width / img.height * baseSize);
+      imageHeight = baseSize;
     } else {
-      imageHeight = Math.floor(img.height / img.width * 100);
-      imageWidth = 100;
+      imageHeight = Math.floor(img.height / img.width * baseSize);
+      imageWidth = baseSize;
     }
     bestLarge.style.width = targetLarge.style.width = imageWidth * 3 + 'px';
     bestLarge.style.height = targetLarge.style.height = imageHeight * 3 + 'px';
@@ -592,14 +579,3 @@ window.addEventListener('load', function(){
     return results$;
   }
 });
-function extend$(sub, sup){
-  function fun(){} fun.prototype = (sub.superclass = sup).prototype;
-  (sub.prototype = new fun).constructor = sub;
-  if (typeof sup.extended == 'function') sup.extended(sub);
-  return sub;
-}
-function import$(obj, src){
-  var own = {}.hasOwnProperty;
-  for (var key in src) if (own.call(src, key)) obj[key] = src[key];
-  return obj;
-}
