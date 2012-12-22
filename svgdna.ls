@@ -249,15 +249,6 @@ class Shape
     ctx.fill!
     ctx.restore!
 
-class Triangle extends Shape
-
-  copy: -> new Triangle this
-
-  paintPath: !(ctx) ->
-    ctx.moveTo -shapeSize, 0
-    ctx.lineTo  shapeSize, -shapeSize * Math.sin @a
-    ctx.lineTo  shapeSize,  shapeSize * Math.sin @a
-
   mutate: ->
     roll = Math.random!
     child = @copy!
@@ -277,29 +268,21 @@ class Triangle extends Shape
       child.color2 = @color2.mutate!
     return child
 
+class Triangle extends Shape
+
+  copy: -> new Triangle this
+
+  paintPath: !(ctx) ->
+    ctx.moveTo -shapeSize, 0
+    ctx.lineTo  shapeSize, -shapeSize * Math.sin @a
+    ctx.lineTo  shapeSize,  shapeSize * Math.sin @a
+
 class Oval extends Shape
 
   paintPath: !(ctx) ->
     ctx.arc 0, 0, shapeSize, 0, 2 * Math.PI, false
 
   copy: -> new Oval this
-
-  mutate: ->
-    roll = Math.random!
-    child = @copy!
-    if roll < 0.20
-      child.rotate += (lowWeightedRandom! - 0.5) * 2 * Math.PI
-    else if roll < 0.40
-      child.sx += Math.random! - 0.5
-    else if roll < 0.60
-      child.sy += Math.random! - 0.5
-    else if roll < 0.80
-      child.p = @p.mutate!
-    else if roll < 0.90
-      child.color1 = @color1.mutate!
-    else
-      child.color2 = @color2.mutate!
-    return child
 
 randomShape = ->
   if Math.random! < 0.75
