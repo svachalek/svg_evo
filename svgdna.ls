@@ -190,16 +190,16 @@ class Painting
     child = new Painting @shapes
     roll = Math.random!
     if roll < 0.10
-      child.origin = '+S'
+      child.origin = '+'
       child.add!
     else if roll < 0.20
-      child.origin = '-S'
+      child.origin = '-'
       child.remove!
     else if roll < 0.30
-      child.origin = 'XS'
+      child.origin = 'X'
       child.swap!
     else if roll < 0.40
-      child.origin = 'FS'
+      child.origin = 'F'
       child.fork!
     else
       child.mutateShape!
@@ -254,25 +254,25 @@ class Shape
     child = @copy!
     if roll < 1/7
       child.rotate += (lowWeightedRandom! - 0.5) * 2 * Math.PI
-      child.origin = 'AR'
+      child.origin = 'R'
     else if roll < 2/7
       child.a += (lowWeightedRandom! - 0.5) * Math.PI / 16
-      child.origin = 'AT'
+      child.origin = 'A'
     else if roll < 3/7
       child.sx += Math.random! - 0.5
-      child.origin = 'SX'
+      child.origin = 'W'
     else if roll < 4/7
       child.sy += Math.random! - 0.5
-      child.origin = 'SY'
+      child.origin = 'H'
     else if roll < 5/7
       child.p = @p.mutate!
-      child.origin = '@P'
+      child.origin = 'P'
     else if roll < 6/7
       child.color1 = @color1.mutate!
-      child.origin = 'C1'
+      child.origin = '{'
     else
       child.color2 = @color2.mutate!
-      child.origin = 'C2'
+      child.origin = '}'
     return child
 
 class Triangle extends Shape
