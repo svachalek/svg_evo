@@ -102,7 +102,7 @@ class Painting
   (shapes, @origin) -> if shapes then @shapes = shapes.slice(0) else @randomize!
 
   randomize: ->
-    @shapes = [randomShape!]
+    @shapes = [new Shape!]
     @origin = 'R'
     return this
 
@@ -170,7 +170,7 @@ class Painting
     if @shapes.length >= imageShapes then @shapes.splice 0, 1
     # lean towards adding at the top
     i = Math.floor highWeightedRandom! * @shapes.length
-    @shapes.splice i, 0, randomShape!
+    @shapes.splice i, 0,  new Shape!
 
   fork: !->
     if @shapes.length >= imageShapes then @shapes.splice 0, 1
@@ -240,6 +240,7 @@ class Shape
     @p = new Point!
     @color1 = new Color!
     @color2 = new Color!
+    @paintPath = if Math.random! < 0.50 then triangle else oval
 
   paint: !(ctx) ->
     ctx.save!
@@ -257,21 +258,24 @@ class Shape
     ctx.restore!
 
   mutate: ->
-    roll = Math.random!
-    child = @copy!
-    if roll < 1/6
+    roll = Math.random! * 10
+    child = new Shape this
+    if roll < 1
+      child.paintPath = if @paintPath == triangle then oval else triangle
+      child.origin = 'O'
+    else if roll < 2
       child.rotate += plusOrMinus(Math.PI / 16, Math.PI / 4)
       child.origin = 'R'
-    else if roll < 2/6
+    else if roll < 3
       child.sx += plusOrMinus(0.1, 0.5)
       child.origin = 'W'
-    else if roll < 3/6
+    else if roll < 4
       child.sy += plusOrMinus(0.1, 0.5)
       child.origin = 'H'
-    else if roll < 4/6
+    else if roll < 6
       child.p = @p.mutate!
       child.origin = 'P'
-    else if roll < 5/6
+    else if roll < 8
       child.color1 = @color1.mutate!
       child.origin = '{'
     else
@@ -279,28 +283,14 @@ class Shape
       child.origin = '}'
     return child
 
-class Triangle extends Shape
-
-  copy: -> new Triangle this
-
-  paintPath: !(ctx) ->
+triangle = !(ctx) ->
     r = shapeSize * 2 * Math.sqrt(Math.PI) / Math.pow(3, 3/4)
     ctx.moveTo -r, 0
     ctx.lineTo  r * Math.cos(Math.PI / 3), -r * Math.sin(Math.PI / 3)
     ctx.lineTo  r * Math.cos(Math.PI / 3),  r * Math.sin(Math.PI / 3)
 
-class Oval extends Shape
-
-  copy: -> new Oval this
-
-  paintPath: !(ctx) ->
+oval = !(ctx) ->
     ctx.arc 0, 0, shapeSize, 0, 2 * Math.PI, false
-
-randomShape = ->
-  if Math.random! < 0.50
-    new Triangle!
-  else
-    new Oval!
 
 targetData = null
 bestData = null
