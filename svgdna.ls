@@ -74,7 +74,7 @@ class Point
     return this
 
   mutate: ->
-    r = Math.floor plusOrMinus(shapeSize / 2, shapeSize * 2)
+    r = Math.floor plusOrMinus(shapeSize / 8, shapeSize / 2)
     a = Math.random! * Math.PI * 2
     dx = r * Math.cos a
     dy = r * Math.sin a
@@ -97,11 +97,11 @@ class Color
     child = new Color @r, @g, @b, @a
     roll = Math.random!
     if roll < 0.25
-      child.r = Math.floor clamp(0, @r + plusOrMinus(8, 32), 255)
+      child.r = Math.floor clamp(0, @r + plusOrMinus(32, 64), 255)
     else if roll < 0.50
-      child.g = Math.floor clamp(0, @g + plusOrMinus(8, 32), 255)
+      child.g = Math.floor clamp(0, @g + plusOrMinus(32, 64), 255)
     else if roll < 0.75
-      child.b = Math.floor clamp(0, @b + plusOrMinus(8, 32), 255)
+      child.b = Math.floor clamp(0, @b + plusOrMinus(32, 64), 255)
     else
       child.a = clamp(0, @a + plusOrMinus(0.05, 0.20), 1)
     return child
@@ -170,21 +170,18 @@ class Painting
 
   remove: !->
     if @shapes.length > 1
-      # lean towards removing from the bottom
-      i = Math.floor lowWeightedRandom! * @shapes.length
+      i = Math.floor Math.random! * @shapes.length
       @shapes.splice i, 1
 
   add: !->
     if @shapes.length >= imageShapes then @shapes.splice 0, 1
-    # lean towards adding at the top
-    i = Math.floor highWeightedRandom! * @shapes.length
-    @shapes.splice i, 0,  new Shape!
+    @shapes.push new Shape!
 
   fork: !->
     if @shapes.length >= imageShapes then @shapes.splice 0, 1
-    # lean towards adding at the top
+    # lean towards copying from the top
     i = Math.floor highWeightedRandom! * @shapes.length
-    @shapes.splice i, 0, @shapes[i].mutate!
+    @shapes.push @shapes[i].mutate!
 
   swap: !->
     if @shapes.length >= 2
@@ -204,16 +201,16 @@ class Painting
   mutate: ->
     child = new Painting @shapes
     roll = Math.random!
-    if roll < 0.01
+    if roll < 0.02
       child.origin = 'add'
       child.add!
-    else if roll < 0.02
+    else if roll < 0.04
       child.origin = 'fork'
       child.fork!
-    else if roll < 0.05
+    else if roll < 0.08
       child.origin = 'remove'
       child.remove!
-    else if roll < 0.10
+    else if roll < 0.12
       child.origin = 'order'
       child.swap!
     else
@@ -221,15 +218,21 @@ class Painting
     return child
 
   cross: (other) ->
-    len = Math.min this.shapes.length, other.shapes.length
-    i = 0
+    i = j = 0
     shapes = []
-    while i < len
+    while i < @shapes.length && j < other.shapes.length
       if Math.random! < 0.5
-        shapes.push this.shapes[i]
+        shapes.push @shapes[i++]
       else
-        shapes.push other.shapes[i]
-      ++i
+        shapes.push other.shapes[j++]
+    while i < @shapes.length
+      shapes.push @shapes[i++]
+    while j < other.shapes.length
+      shapes.push other.shapes[j++]
+    n = Math.floor shapes.length / 2
+    i = 0
+    while i++ < n
+      shapes.splice (Math.floor Math.random! * shapes.length), 1
     new Painting shapes, 'cross'
 
 class Shape
@@ -266,24 +269,24 @@ class Shape
     ctx.restore!
 
   mutate: ->
-    roll = Math.random! * 10
+    roll = Math.random! * 14
     child = new Shape this
     if roll < 1
       child.paintPath = if @paintPath == triangle then oval else triangle
       child.origin = 'shape'
     else if roll < 2
-      child.rotate += plusOrMinus(Math.PI / 16, Math.PI / 4)
+      child.rotate += plusOrMinus(Math.PI / 32, Math.PI / 8)
       child.origin = 'orientation'
-    else if roll < 3
+    else if roll < 4
       child.sx += plusOrMinus(0.1, 0.5)
       child.origin = 'size'
-    else if roll < 4
+    else if roll < 6
       child.sy += plusOrMinus(0.1, 0.5)
       child.origin = 'size'
-    else if roll < 6
+    else if roll < 10
       child.p = @p.mutate!
       child.origin = 'position'
-    else if roll < 8
+    else if roll < 12
       child.color1 = @color1.mutate!
       child.origin = 'color'
     else
