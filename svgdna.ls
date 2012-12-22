@@ -35,6 +35,14 @@ survivorBoxes = []
 mutantBoxes = []
 crossBoxes = []
 
+attempts = {}
+successes = {}
+
+attempt = (type, success) ->
+  attempts[type] = (attempts[type] || 0) + 1
+  if success
+    successes[type] = (successes[type] || 0) + 1
+
 lowWeightedRandom = -> Math.cos(Math.random! * Math.PI / 2)
 highWeightedRandom = -> Math.sin(Math.random! * Math.PI / 2)
 
@@ -103,7 +111,7 @@ class Painting
 
   randomize: ->
     @shapes = [new Shape!]
-    @origin = 'R'
+    @origin = 'random'
     return this
 
   paint: !(canvas, scale) ->
@@ -123,7 +131,7 @@ class Painting
     canvas = box.children[0]
     @paint canvas, 1
     unless @score then @diffScore canvas
-    label = Math.floor(@score) + ' ' + @origin + ' ' + (@age || '')
+    label = Math.floor(@score) + (if @age then ' +' + @age else '')
     setText box.children[1], label
 
   diffScore: (canvas) ->
@@ -197,16 +205,16 @@ class Painting
     child = new Painting @shapes
     roll = Math.random!
     if roll < 0.01
-      child.origin = '+'
+      child.origin = 'add'
       child.add!
     else if roll < 0.02
-      child.origin = 'F'
+      child.origin = 'fork'
       child.fork!
     else if roll < 0.05
-      child.origin = '-'
+      child.origin = 'remove'
       child.remove!
     else if roll < 0.10
-      child.origin = 'X'
+      child.origin = 'order'
       child.swap!
     else
       child.mutateShape!
@@ -222,7 +230,7 @@ class Painting
       else
         shapes.push other.shapes[i]
       ++i
-    new Painting shapes, 'X'
+    new Painting shapes, 'cross'
 
 class Shape
   (source) ->
@@ -262,25 +270,25 @@ class Shape
     child = new Shape this
     if roll < 1
       child.paintPath = if @paintPath == triangle then oval else triangle
-      child.origin = 'O'
+      child.origin = 'shape'
     else if roll < 2
       child.rotate += plusOrMinus(Math.PI / 16, Math.PI / 4)
-      child.origin = 'R'
+      child.origin = 'orientation'
     else if roll < 3
       child.sx += plusOrMinus(0.1, 0.5)
-      child.origin = 'W'
+      child.origin = 'size'
     else if roll < 4
       child.sy += plusOrMinus(0.1, 0.5)
-      child.origin = 'H'
+      child.origin = 'size'
     else if roll < 6
       child.p = @p.mutate!
-      child.origin = 'P'
+      child.origin = 'position'
     else if roll < 8
       child.color1 = @color1.mutate!
-      child.origin = '{'
+      child.origin = 'color'
     else
       child.color2 = @color2.mutate!
-      child.origin = '}'
+      child.origin = 'color'
     return child
 
 triangle = !(ctx) ->
@@ -305,6 +313,9 @@ breed = !->
     child.show mutantBoxes[i]
     if child.score < mom.score
       paintings[n] = child
+      attempt child.origin, true
+    else
+      attempt child.origin, false
   for i in [0 to generationCross - 1]
     mom = randomPainting!
     dad = randomPainting!
@@ -314,8 +325,12 @@ breed = !->
     child.show crossBoxes[i]
     if child.score < mom.score
       paintings[mom] = child
+      attempt 'cross', true
     else if child.score < dad.score
       paintings[dad] = child
+      attempt 'cross', true
+    else
+      attempt 'cross', false
   # show the best
   paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
   if paintings[0] != best
@@ -329,8 +344,14 @@ breed = !->
   ++generationNumber
   cumulativeTime += Date.now! - startTime
   setText document.getElementById('generation'), generationNumber
-  setText document.getElementById('time'), Math.floor cumulativeTime / 1000
+  setText document.getElementById('time'), (Math.floor cumulativeTime / 1000) + 's'
   setText document.getElementById('speed'), Math.floor generationNumber / (cumulativeTime / 1000)
+  # for key, val of successes
+  #  setText document.getElementById('success-' + key), 
+  for key, val of attempts
+    percent = (Math.floor (successes[key] || 0) / val * 100) + '%'
+    fraction = (successes[key] || 0) + '/' + val
+    setText document.getElementById('success-' + key), fraction + ' (' + percent + ')'
   setTimeout breed, 0
 
 weightMap = null
@@ -378,6 +399,8 @@ paintWeightMap = ->
 restart = ->
   cumulativeTime := 0
   generationNumber := 0
+  attempts := {}
+  successes := {}
   paintings := [new Painting! for n in [1 to generationKeep]]
   setTimeout breed, 0
 

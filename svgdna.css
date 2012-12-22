@@ -15,6 +15,15 @@ body {
   display:          inline-table;
   vertical-align:   middle;
   margin:           1em;
+  font-size:        90%;
+}
+
+th {
+  font-weight:      normal;
+}
+
+th.major {
+  font-weight:      bold;
 }
 
 #target-large, #best-large {
