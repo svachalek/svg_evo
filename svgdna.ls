@@ -225,16 +225,7 @@ class Shape
     else
       @randomize!
 
-  gradient: (ctx, color1, color2) ->
-    g = ctx.createLinearGradient -shapeSize / 2, 0, shapeSize / 2, 0
-    g.addColorStop 0, color1.fillStyle!
-    g.addColorStop 1, color2.fillStyle!
-    return g
-
-class Triangle extends Shape
-
   randomize: !->
-    @sx = Math.random! + 0.5
     @sx = Math.random! + 0.5
     @sy = Math.random! + 0.5
     @rotate = Math.random! * 2 * Math.PI
@@ -242,6 +233,14 @@ class Triangle extends Shape
     @a = Math.random! * Math.PI / 4
     @color1 = new Color!
     @color2 = new Color!
+
+  gradient: (ctx, color1, color2) ->
+    g = ctx.createLinearGradient -shapeSize / 2, 0, shapeSize / 2, 0
+    g.addColorStop 0, color1.fillStyle!
+    g.addColorStop 1, color2.fillStyle!
+    return g
+
+class Triangle extends Shape
 
   paint: !(ctx) ->
     ctx.save!
@@ -280,18 +279,10 @@ class Triangle extends Shape
 
 class Oval extends Shape
 
-  randomize: !->
-    @sx = Math.random! + 0.5
-    @sy = Math.random! + 0.5
-    @rotate = Math.random! * 2 * Math.PI
-    @center = new Point!
-    @color1 = new Color!
-    @color2 = new Color!
-
   paint: !(ctx) ->
     ctx.save!
     ctx.fillStyle = @gradient ctx, @color1, @color2
-    ctx.translate @center.x, @center.y
+    ctx.translate @p.x, @p.y
     ctx.rotate @rotate
     ctx.scale @sx, @sy
     ctx.beginPath!
@@ -312,7 +303,7 @@ class Oval extends Shape
     else if roll < 0.60
       child.sy += Math.random! - 0.5
     else if roll < 0.80
-      child.center = @center.mutate!
+      child.p = @p.mutate!
     else if roll < 0.90
       child.color1 = @color1.mutate!
     else
