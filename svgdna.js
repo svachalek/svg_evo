@@ -1,4 +1,4 @@
-var baseSize, shapeSize, imageWidth, imageHeight, imageShapes, imageRadius, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomByte, randomPainting, randomSign, clamp, plusOrMinus, setText, diffPoint, Point, Color, Painting, Shape, triangle, oval, targetData, bestData, breed, weightMap, generateWeightMap, paintWeightMap, restart, createBox;
+var baseSize, shapeSize, imageWidth, imageHeight, imageShapes, imageRadius, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomByte, randomPainting, randomSign, clamp, plusOrMinus, setText, diffPoint, Point, Color, Painting, Shape, triangle, oval, targetData, bestData, breed, weightMap, generateWeightMap, paintWeightMap, restart, createBox;
 baseSize = 100;
 shapeSize = 20;
 imageWidth = baseSize;
@@ -7,9 +7,9 @@ imageShapes = 100;
 imageRadius = function(){
   return Math.sqrt(imageWidth * imageWidth + imageHeight * imageHeight) / 2;
 };
-generationKeep = 4;
+generationKeep = 5;
 generationMutate = 15;
-generationCross = 7;
+generationCross = 3;
 generationSize = function(){
   return generationKeep + generationMutate + generationCross;
 };
@@ -19,6 +19,14 @@ paintings = [];
 survivorBoxes = [];
 mutantBoxes = [];
 crossBoxes = [];
+attempts = {};
+successes = {};
+attempt = function(type, success){
+  attempts[type] = (attempts[type] || 0) + 1;
+  if (success) {
+    return successes[type] = (successes[type] || 0) + 1;
+  }
+};
 lowWeightedRandom = function(){
   return Math.cos(Math.random() * Math.PI / 2);
 };
@@ -85,7 +93,7 @@ Point = (function(){
   };
   prototype.mutate = function(){
     var r, a, dx, dy;
-    r = Math.floor(plusOrMinus(shapeSize / 2, shapeSize * 2));
+    r = Math.floor(plusOrMinus(shapeSize / 8, shapeSize / 2));
     a = Math.random() * Math.PI * 2;
     dx = r * Math.cos(a);
     dy = r * Math.sin(a);
@@ -120,11 +128,11 @@ Color = (function(){
     child = new Color(this.r, this.g, this.b, this.a);
     roll = Math.random();
     if (roll < 0.25) {
-      child.r = Math.floor(clamp(0, this.r + plusOrMinus(8, 32), 255));
+      child.r = Math.floor(clamp(0, this.r + plusOrMinus(32, 64), 255));
     } else if (roll < 0.50) {
-      child.g = Math.floor(clamp(0, this.g + plusOrMinus(8, 32), 255));
+      child.g = Math.floor(clamp(0, this.g + plusOrMinus(32, 64), 255));
     } else if (roll < 0.75) {
-      child.b = Math.floor(clamp(0, this.b + plusOrMinus(8, 32), 255));
+      child.b = Math.floor(clamp(0, this.b + plusOrMinus(32, 64), 255));
     } else {
       child.a = clamp(0, this.a + plusOrMinus(0.05, 0.20), 1);
     }
@@ -145,7 +153,7 @@ Painting = (function(){
   }
   prototype.randomize = function(){
     this.shapes = [new Shape()];
-    this.origin = 'R';
+    this.origin = 'random';
     return this;
   };
   prototype.paint = function(canvas, scale){
@@ -170,7 +178,7 @@ Painting = (function(){
     if (!this.score) {
       this.diffScore(canvas);
     }
-    label = Math.floor(this.score) + ' ' + this.origin + ' ' + (this.age || '');
+    label = Math.floor(this.score) + (this.age ? ' +' + this.age : '');
     return setText(box.children[1], label);
   };
   prototype.diffScore = function(canvas){
@@ -214,25 +222,15 @@ Painting = (function(){
   prototype.remove = function(){
     var i;
     if (this.shapes.length > 1) {
-      i = Math.floor(lowWeightedRandom() * this.shapes.length);
+      i = Math.floor(Math.random() * this.shapes.length);
       this.shapes.splice(i, 1);
     }
   };
   prototype.add = function(){
-    var i;
     if (this.shapes.length >= imageShapes) {
       this.shapes.splice(0, 1);
     }
-    i = Math.floor(highWeightedRandom() * this.shapes.length);
-    this.shapes.splice(i, 0, new Shape());
-  };
-  prototype.fork = function(){
-    var i;
-    if (this.shapes.length >= imageShapes) {
-      this.shapes.splice(0, 1);
-    }
-    i = Math.floor(highWeightedRandom() * this.shapes.length);
-    this.shapes.splice(i, 0, this.shapes[i].mutate());
+    this.shapes.push(new Shape());
   };
   prototype.swap = function(){
     var i, tmp;
@@ -255,37 +253,46 @@ Painting = (function(){
     var child, roll;
     child = new Painting(this.shapes);
     roll = Math.random();
-    if (roll < 0.01) {
-      child.origin = '+';
+    if (roll < 0.02 + generationNumber / 50000) {
+      child.origin = 'add';
       child.add();
-    } else if (roll < 0.02) {
-      child.origin = 'F';
-      child.fork();
-    } else if (roll < 0.05) {
-      child.origin = '-';
-      child.remove();
-    } else if (roll < 0.10) {
-      child.origin = 'X';
-      child.swap();
     } else {
-      child.mutateShape();
+      roll = Math.random();
+      if (roll < 0.04) {
+        child.origin = 'remove';
+        child.remove();
+      } else if (roll < 0.08) {
+        child.origin = 'order';
+        child.swap();
+      } else {
+        child.mutateShape();
+      }
     }
     return child;
   };
   prototype.cross = function(other){
-    var len, i, shapes;
-    len = Math.min(this.shapes.length, other.shapes.length);
-    i = 0;
+    var i, j, shapes, n;
+    i = j = 0;
     shapes = [];
-    while (i < len) {
+    while (i < this.shapes.length && j < other.shapes.length) {
       if (Math.random() < 0.5) {
-        shapes.push(this.shapes[i]);
+        shapes.push(this.shapes[i++]);
       } else {
-        shapes.push(other.shapes[i]);
+        shapes.push(other.shapes[j++]);
       }
-      ++i;
     }
-    return new Painting(shapes, 'X');
+    while (i < this.shapes.length) {
+      shapes.push(this.shapes[i++]);
+    }
+    while (j < other.shapes.length) {
+      shapes.push(other.shapes[j++]);
+    }
+    n = Math.floor(shapes.length / 2);
+    i = 0;
+    while (i++ < n) {
+      shapes.splice(Math.floor(Math.random() * shapes.length), 1);
+    }
+    return new Painting(shapes, 'cross');
   };
   return Painting;
 }());
@@ -331,29 +338,29 @@ Shape = (function(){
   };
   prototype.mutate = function(){
     var roll, child;
-    roll = Math.random() * 10;
+    roll = Math.random() * 14;
     child = new Shape(this);
     if (roll < 1) {
       child.paintPath = this.paintPath === triangle ? oval : triangle;
-      child.origin = 'O';
+      child.origin = 'shape';
     } else if (roll < 2) {
-      child.rotate += plusOrMinus(Math.PI / 16, Math.PI / 4);
-      child.origin = 'R';
-    } else if (roll < 3) {
-      child.sx += plusOrMinus(0.1, 0.5);
-      child.origin = 'W';
+      child.rotate += plusOrMinus(Math.PI / 32, Math.PI / 8);
+      child.origin = 'orientation';
     } else if (roll < 4) {
-      child.sy += plusOrMinus(0.1, 0.5);
-      child.origin = 'H';
+      child.sx += plusOrMinus(0.1, 0.5);
+      child.origin = 'size';
     } else if (roll < 6) {
+      child.sy += plusOrMinus(0.1, 0.5);
+      child.origin = 'size';
+    } else if (roll < 10) {
       child.p = this.p.mutate();
-      child.origin = 'P';
-    } else if (roll < 8) {
+      child.origin = 'position';
+    } else if (roll < 12) {
       child.color1 = this.color1.mutate();
-      child.origin = '{';
+      child.origin = 'color';
     } else {
       child.color2 = this.color2.mutate();
-      child.origin = '}';
+      child.origin = 'color';
     }
     return child;
   };
@@ -372,7 +379,7 @@ oval = function(ctx){
 targetData = null;
 bestData = null;
 breed = function(){
-  var startTime, i$, ref$, len$, i, n, mom, child, dad, best, painting;
+  var startTime, i$, ref$, len$, i, n, mom, child, dad, best, painting, key, val, percent, fraction;
   startTime = Date.now();
   for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
     i = ref$[i$];
@@ -382,6 +389,9 @@ breed = function(){
     child.show(mutantBoxes[i]);
     if (child.score < mom.score) {
       paintings[n] = child;
+      attempt(child.origin, true);
+    } else {
+      attempt(child.origin, false);
     }
   }
   for (i$ = 0, len$ = (ref$ = (fn1$())).length; i$ < len$; ++i$) {
@@ -393,10 +403,14 @@ breed = function(){
     }
     child = paintings[mom].cross(paintings[dad]);
     child.show(crossBoxes[i]);
-    if (child.score < mom.score) {
+    if (child.score < paintings[mom].score) {
       paintings[mom] = child;
-    } else if (child.score < dad.score) {
+      attempt('cross', true);
+    } else if (child.score < paintings[dad].score) {
       paintings[dad] = child;
+      attempt('cross', true);
+    } else {
+      attempt('cross', false);
     }
   }
   paintings.sort(function(a, b){
@@ -418,8 +432,14 @@ breed = function(){
   ++generationNumber;
   cumulativeTime += Date.now() - startTime;
   setText(document.getElementById('generation'), generationNumber);
-  setText(document.getElementById('time'), Math.floor(cumulativeTime / 1000));
+  setText(document.getElementById('time'), Math.floor(cumulativeTime / 1000) + 's');
   setText(document.getElementById('speed'), Math.floor(generationNumber / (cumulativeTime / 1000)));
+  for (key in ref$ = attempts) {
+    val = ref$[key];
+    percent = Math.floor((successes[key] || 0) / val * 100) + '%';
+    fraction = (successes[key] || 0) + '/' + val;
+    setText(document.getElementById('success-' + key), fraction + ' (' + percent + ')');
+  }
   setTimeout(breed, 0);
   function fn$(){
     var i$, to$, results$ = [];
@@ -479,6 +499,8 @@ restart = function(){
   var res$, i$, ref$, len$, n;
   cumulativeTime = 0;
   generationNumber = 0;
+  attempts = {};
+  successes = {};
   res$ = [];
   for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
     n = ref$[i$];

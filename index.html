@@ -8,6 +8,11 @@
 
 <h2>Vector Painting Evolution</h2>
 
+<div>
+  <img id='target-large'>
+  <canvas id='best-large'>
+</div>
+
 <div id='intro'>
   <p>
   This page starts by creating a set of paintings that each contain one oval or triangle.
@@ -25,28 +30,32 @@
 </div>
 
 <table id='stats'>
-  <tr><th>Target image:    <td>
-                             <select id='imageSelect' visible='1'>
-                               <option>Lenna.jpg</option>
-                               <option>MonaLisa.jpg</option>
-                               <option>StarryNight.jpg</option>
-                               <option>AmericanGothic.jpg</option>
-                               <option>ShadySpot.jpg</option>
-                               <option>FantasyIsland.jpg</option>
-                               <option>Flowers.jpg</option>
-                               <option>HanaleiValley.jpg</option>
-                               <option>Kitties.jpg</option>
-                               <option>ZhangJiaJie.jpg</option>
-                             </select>
-  <tr><th>Generation:      <td id='generation'>0
-  <tr><th>Time:            <td id='time'>0
-  <tr><th>Generations/sec: <td id='speed'>?
+  <tr><th class='major'>Target image:<td>
+    <select id='imageSelect' visible='1'>
+      <option>Lenna.jpg</option>
+      <option>MonaLisa.jpg</option>
+      <option>StarryNight.jpg</option>
+      <option>AmericanGothic.jpg</option>
+      <option>ShadySpot.jpg</option>
+      <option>FantasyIsland.jpg</option>
+      <option>Flowers.jpg</option>
+      <option>HanaleiValley.jpg</option>
+      <option>Kitties.jpg</option>
+      <option>ZhangJiaJie.jpg</option>
+    </select>
+  <tr><th class='major'>Generation:     <td id='generation'>0
+  <tr><th class='major'>Time:           <td id='time'>0
+  <tr><th>Generations/sec:              <td id='speed'>N/A
+  <tr><th>Add mutation success:         <td id='success-add'>0%
+  <tr><th>Remove mutation success:      <td id='success-remove'>0%
+  <tr><th>Order mutation success:       <td id='success-order'>0%
+  <tr><th>Size mutation success:        <td id='success-size'>0%
+  <tr><th>Position mutation success:    <td id='success-position'>0%
+  <tr><th>Orientation mutation success: <td id='success-orientation'>0%
+  <tr><th>Color mutation success:       <td id='success-color'>0%
+  <tr><th>Shape mutation success:       <td id='success-shape'>0%
+  <tr><th>Crossbreed success:           <td id='success-cross'>0%
 </table>
-
-<div>
-  <img id='target-large'>
-  <canvas id='best-large'>
-</div>
 
 <section id='boxes'>
   <div id='target-box' class='box'>
@@ -69,7 +78,7 @@
   <div class='legend crossbreed'> </div>  <label>Crossbreed</label>
 </div>
 
-<div class='score'>240 X3</div> <label>Accuracy score (lower is better), origin code, and age.</label>
+<div class='score'>240 +3</div> <label>Accuracy score (lower is better) and age.</label>
 
 <table>
 </table>
