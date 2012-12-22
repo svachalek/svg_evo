@@ -76,7 +76,7 @@ class Color
     @r = randomByte!
     @g = randomByte!
     @b = randomByte!
-    @a = Math.random!
+    @a = lowWeightedRandom!
     return this
 
   fillStyle: -> 'rgba(' + @r + ',' + @g + ',' + @b + ',' + @a + ')'
