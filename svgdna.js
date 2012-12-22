@@ -1,10 +1,11 @@
-var imageWidth, imageHeight, imageShapes, imageRadius, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomRadius, randomByte, randomPainting, clamp, setText, diffPoint, Point, Color, Painting, Shape, Triangle, Oval, randomShape, targetData, bestData, breed, weightMap, generateWeightMap, paintWeightMap, restart, createBox;
+var imageWidth, imageHeight, imageShapes, imageRadius, shapeSize, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomByte, randomPainting, clamp, setText, diffPoint, Point, Color, Painting, Shape, Triangle, Oval, randomShape, targetData, bestData, breed, weightMap, generateWeightMap, paintWeightMap, restart, createBox;
 imageWidth = 100;
 imageHeight = 100;
 imageShapes = 100;
 imageRadius = function(){
   return Math.sqrt(imageWidth * imageWidth + imageHeight * imageHeight) / 2;
 };
+shapeSize = 40;
 generationKeep = 4;
 generationMutate = 15;
 generationCross = 7;
@@ -29,9 +30,6 @@ randomX = function(){
 randomY = function(){
   return Math.floor(Math.random() * imageHeight);
 };
-randomRadius = function(){
-  return Math.floor(lowWeightedRandom() * imageRadius() / 2);
-};
 randomByte = function(){
   return Math.floor(Math.random() * 256);
 };
@@ -50,13 +48,13 @@ clamp = function(min, n, max){
 setText = function(element, text){
   return element.innerText = element.textContent = text;
 };
-diffPoint = function(d1, x1, y1, d2, x2, y2){
+diffPoint = function(d, x1, y1, x2, y2){
   var b1, b2, dr, dg, db;
   b1 = (x1 + y1 * imageWidth) * 4;
   b2 = (x2 + y2 * imageWidth) * 4;
-  dr = d1[b1++] - d2[b2++];
-  dg = d1[b1++] - d2[b2++];
-  db = d1[b1++] - d2[b2++];
+  dr = d[b1++] - d[b2++];
+  dg = d[b1++] - d[b2++];
+  db = d[b1++] - d[b2++];
   return Math.sqrt((dr * dr + dg * dg + db * db) / (3 * 255 * 255));
 };
 Point = (function(){
@@ -76,7 +74,7 @@ Point = (function(){
   };
   prototype.mutate = function(){
     var r, a, dx, dy;
-    r = randomRadius();
+    r = Math.floor(Math.random() * shapeSize);
     a = Math.random() * Math.PI * 2;
     dx = r * Math.cos(a);
     dy = r * Math.sin(a);
@@ -111,11 +109,11 @@ Color = (function(){
     child = new Color(this.r, this.g, this.b, this.a);
     roll = Math.random();
     if (roll < 0.25) {
-      child.r = clamp(0, this.r + Math.random() * 10 - 5, 255);
+      child.r = Math.floor(clamp(0, this.r + Math.random() * 10 - 5, 255));
     } else if (roll < 0.50) {
-      child.g = clamp(0, this.g + Math.random() * 10 - 5, 255);
+      child.g = Math.floor(clamp(0, this.g + Math.random() * 10 - 5, 255));
     } else if (roll < 0.75) {
-      child.b = clamp(0, this.b + Math.random() * 10 - 5, 255);
+      child.b = Math.floor(clamp(0, this.b + Math.random() * 10 - 5, 255));
     } else {
       child.a = clamp(0, this.a + Math.random() / 10 - 0.05, 1);
     }
@@ -158,27 +156,27 @@ Painting = (function(){
     if (!this.score) {
       this.diffScore(canvas);
     }
-    label = '@' + Math.floor(this.score * 10000) + ' #' + this.shapes.length + ' ' + this.origin + (this.age || '');
+    label = Math.floor(this.score) + ' ' + this.origin + (this.age || '');
     return setText(box.children[1], label);
   };
   prototype.diffScore = function(canvas){
-    var ctx, score, points, data, y, x, diff;
+    var ctx, score, points, data, i, w, l, dr, dg, db, diff;
     ctx = canvas.getContext('2d');
     score = 0;
     points = [];
     data = ctx.getImageData(0, 0, imageWidth, imageHeight).data;
-    y = 0;
-    while (y < imageHeight) {
-      x = 0;
-      while (x < imageWidth) {
-        diff = diffPoint(data, x, y, targetData, x, y);
-        points.push(diff);
-        score += diff * weightMap[x + y * imageWidth];
-        ++x;
-      }
-      ++y;
+    i = w = 0;
+    l = data.length;
+    while (i < l) {
+      dr = data[i] - targetData[i++];
+      dg = data[i] - targetData[i++];
+      db = data[i] - targetData[i++];
+      i++;
+      diff = Math.sqrt((dr * dr + dg * dg + db * db) / (3 * 255 * 255));
+      points.push(diff);
+      score += diff * weightMap[w++];
     }
-    this.score = score / (imageHeight * imageWidth);
+    this.score = score;
     return this.points = points;
   };
   prototype.paintDiff = function(canvas){
@@ -291,25 +289,37 @@ Shape = (function(){
       this.randomize();
     }
   }
+  prototype.gradient = function(ctx, color1, color2){
+    var g;
+    g = ctx.createLinearGradient(-shapeSize / 2, 0, shapeSize / 2, 0);
+    g.addColorStop(0, color1.fillStyle());
+    g.addColorStop(1, color2.fillStyle());
+    return g;
+  };
   return Shape;
 }());
 Triangle = (function(superclass){
   var prototype = extend$((import$(Triangle, superclass).displayName = 'Triangle', Triangle), superclass).prototype, constructor = Triangle;
   prototype.randomize = function(){
-    this.rotate = 0;
-    this.p0 = new Point();
-    this.p1 = this.p0.mutate();
-    this.p2 = this.p0.mutate();
-    this.color = new Color();
+    this.sx = Math.random() + 0.5;
+    this.sx = Math.random() + 0.5;
+    this.sy = Math.random() + 0.5;
+    this.rotate = Math.random() * 2 * Math.PI;
+    this.p = new Point();
+    this.a = Math.random() * Math.PI / 4;
+    this.color1 = new Color();
+    this.color2 = new Color();
   };
   prototype.paint = function(ctx){
     ctx.save();
-    ctx.fillStyle = this.color.fillStyle();
+    ctx.fillStyle = this.gradient(ctx, this.color1, this.color2);
+    ctx.translate(this.p.x, this.p.y);
     ctx.rotate(this.rotate);
+    ctx.scale(this.sx, this.sy);
     ctx.beginPath();
-    ctx.moveTo(this.p0.x, this.p0.y);
-    ctx.lineTo(this.p1.x, this.p1.y);
-    ctx.lineTo(this.p2.x, this.p2.y);
+    ctx.moveTo(-shapeSize / 2, 0);
+    ctx.lineTo(shapeSize / 2, -shapeSize / 2 * Math.sin(this.a));
+    ctx.lineTo(shapeSize / 2, shapeSize / 2 * Math.sin(this.a));
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -321,16 +331,20 @@ Triangle = (function(superclass){
     var roll, child;
     roll = Math.random();
     child = this.copy();
-    if (roll < 0.2) {
-      child.p0 = this.p0.mutate();
-    } else if (roll < 0.4) {
-      child.p1 = this.p1.mutate();
-    } else if (roll < 0.6) {
-      child.p2 = this.p2.mutate();
-    } else if (roll < 0.8) {
+    if (roll < 0.20) {
       child.rotate += (lowWeightedRandom() - 0.5) * 2 * Math.PI;
+    } else if (roll < 0.30) {
+      child.a += (lowWeightedRandom() - 0.5) * Math.PI / 16;
+    } else if (roll < 0.40) {
+      child.sx += Math.random() - 0.5;
+    } else if (roll < 0.60) {
+      child.sy += Math.random() - 0.5;
+    } else if (roll < 0.80) {
+      child.p = this.p.mutate();
+    } else if (roll < 0.90) {
+      child.color1 = this.color1.mutate();
     } else {
-      child.color = this.color.mutate();
+      child.color2 = this.color2.mutate();
     }
     return child;
   };
@@ -346,16 +360,17 @@ Oval = (function(superclass){
     this.sy = Math.random() + 0.5;
     this.rotate = Math.random() * 2 * Math.PI;
     this.center = new Point();
-    this.r = randomRadius();
-    this.color = new Color();
+    this.color1 = new Color();
+    this.color2 = new Color();
   };
   prototype.paint = function(ctx){
     ctx.save();
-    ctx.fillStyle = this.color.fillStyle();
+    ctx.fillStyle = this.gradient(ctx, this.color1, this.color2);
+    ctx.translate(this.center.x, this.center.y);
     ctx.rotate(this.rotate);
     ctx.scale(this.sx, this.sy);
     ctx.beginPath();
-    ctx.arc(this.center.x, this.center.y, this.r, 0, 2 * Math.PI, false);
+    ctx.arc(0, 0, shapeSize / 2, 0, 2 * Math.PI, false);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -370,13 +385,15 @@ Oval = (function(superclass){
     if (roll < 0.20) {
       child.rotate += (lowWeightedRandom() - 0.5) * 2 * Math.PI;
     } else if (roll < 0.40) {
-      child.sx += (Math.random() - 0.5) / 4;
+      child.sx += Math.random() - 0.5;
     } else if (roll < 0.60) {
-      child.sy += (Math.random() - 0.5) / 4;
+      child.sy += Math.random() - 0.5;
     } else if (roll < 0.80) {
       child.center = this.center.mutate();
+    } else if (roll < 0.90) {
+      child.color1 = this.color1.mutate();
     } else {
-      child.color = this.color.mutate();
+      child.color2 = this.color2.mutate();
     }
     return child;
   };
@@ -386,7 +403,7 @@ Oval = (function(superclass){
   return Oval;
 }(Shape));
 randomShape = function(){
-  if (Math.random() < 0.8) {
+  if (Math.random() < 0.75) {
     return new Triangle();
   } else {
     return new Oval();
@@ -468,7 +485,7 @@ generateWeightMap = function(){
       l = Math.max(x - 1, 0);
       r = Math.min(x + 1, imageWidth - 1);
       d = Math.min(y + 1, imageHeight - 1);
-      weight = diffPoint(targetData, x, y, targetData, l, u) + diffPoint(targetData, x, y, targetData, x, u) + diffPoint(targetData, x, y, targetData, r, u) + diffPoint(targetData, x, y, targetData, l, y) + diffPoint(targetData, x, y, targetData, r, y) + diffPoint(targetData, x, y, targetData, l, d) + diffPoint(targetData, x, y, targetData, x, d) + diffPoint(targetData, x, y, targetData, r, d);
+      weight = diffPoint(targetData, x, y, l, u) + diffPoint(targetData, x, y, x, u) + diffPoint(targetData, x, y, r, u) + diffPoint(targetData, x, y, l, y) + diffPoint(targetData, x, y, r, y) + diffPoint(targetData, x, y, l, d) + diffPoint(targetData, x, y, x, d) + diffPoint(targetData, x, y, r, d);
       weightMap.push(clamp(0.05, weight / 4, 1));
       ++x;
     }
