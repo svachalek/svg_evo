@@ -177,12 +177,6 @@ class Painting
     if @shapes.length >= imageShapes then @shapes.splice 0, 1
     @shapes.push new Shape!
 
-  fork: !->
-    if @shapes.length >= imageShapes then @shapes.splice 0, 1
-    # lean towards copying from the top
-    i = Math.floor highWeightedRandom! * @shapes.length
-    @shapes.push @shapes[i].mutate!
-
   swap: !->
     if @shapes.length >= 2
       # lean towards swapping at the top
@@ -201,12 +195,9 @@ class Painting
   mutate: ->
     child = new Painting @shapes
     roll = Math.random!
-    if roll < 0.02
+    if roll < 0.04
       child.origin = 'add'
       child.add!
-    else if roll < 0.04
-      child.origin = 'fork'
-      child.fork!
     else if roll < 0.08
       child.origin = 'remove'
       child.remove!
