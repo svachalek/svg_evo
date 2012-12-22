@@ -20,6 +20,8 @@ imageHeight = 100
 imageShapes = 100
 imageRadius = -> (Math.sqrt imageWidth * imageWidth + imageHeight * imageHeight) / 2
 
+shapeSize = 40
+
 generationKeep = 4
 generationMutate = 15
 generationCross = 7
@@ -37,19 +39,18 @@ highWeightedRandom = -> Math.sin(Math.random! * Math.PI / 2)
 
 randomX = -> Math.floor Math.random! * imageWidth
 randomY = -> Math.floor Math.random! * imageHeight
-randomRadius = -> Math.floor lowWeightedRandom! * imageRadius! / 2
 randomByte = -> Math.floor Math.random! * 256
 randomPainting = -> Math.floor Math.random! * paintings.length
 clamp = (min, n, max) -> if n < min then min else if n > max then max else n
 
 setText = (element, text) -> element.innerText = element.textContent = text
 
-diffPoint = (d1, x1, y1, d2, x2, y2) ->
+diffPoint = (d, x1, y1, x2, y2) ->
   b1 = (x1 + (y1 * imageWidth)) * 4
   b2 = (x2 + (y2 * imageWidth)) * 4
-  dr = d1[b1++] - d2[b2++]
-  dg = d1[b1++] - d2[b2++]
-  db = d1[b1++] - d2[b2++]
+  dr = d[b1++] - d[b2++]
+  dg = d[b1++] - d[b2++]
+  db = d[b1++] - d[b2++]
   Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
 
 class Point
@@ -61,7 +62,7 @@ class Point
     return this
 
   mutate: ->
-    r = randomRadius!
+    r = Math.floor Math.random! * shapeSize
     a = Math.random! * Math.PI * 2
     dx = r * Math.cos a
     dy = r * Math.sin a
@@ -84,11 +85,11 @@ class Color
     child = new Color @r, @g, @b, @a
     roll = Math.random!
     if roll < 0.25
-      child.r = clamp(0, @r + Math.random! * 10 - 5, 255)
+      child.r = Math.floor clamp(0, @r + Math.random! * 10 - 5, 255)
     else if roll < 0.50
-      child.g = clamp(0, @g + Math.random! * 10 - 5, 255)
+      child.g = Math.floor clamp(0, @g + Math.random! * 10 - 5, 255)
     else if roll < 0.75
-      child.b = clamp(0, @b + Math.random! * 10 - 5, 255)
+      child.b = Math.floor clamp(0, @b + Math.random! * 10 - 5, 255)
     else
       child.a = clamp(0, @a + Math.random! / 10 - 0.05, 1)
     return child
@@ -123,15 +124,17 @@ class Painting
     score = 0
     points = []
     data = (ctx.getImageData 0, 0, imageWidth, imageHeight).data
-    y = 0
-    while y < imageHeight
-      x = 0
-      while x < imageWidth
-        diff = (diffPoint data, x, y, targetData, x, y)
-        points.push diff
-        score += diff * weightMap[x + (y * imageWidth)]
-        ++x
-      ++y
+    i = w = 0
+    l = data.length
+    while i < l
+      dr = data[i] - targetData[i++]
+      dg = data[i] - targetData[i++]
+      db = data[i] - targetData[i++]
+      i++
+      # should match diffPoint above
+      diff = Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
+      points.push diff
+      score += diff * weightMap[w++]
     @score = score / (imageHeight * imageWidth)
     @points = points
 
@@ -222,23 +225,34 @@ class Shape
     else
       @randomize!
 
+  gradient: (ctx, color1, color2) ->
+    g = ctx.createLinearGradient -shapeSize / 2, 0, shapeSize / 2, 0
+    g.addColorStop 0, color1.fillStyle!
+    g.addColorStop 1, color2.fillStyle!
+    return g
+
 class Triangle extends Shape
 
   randomize: !->
-    @rotate = 0
-    @p0 = new Point!
-    @p1 = @p0.mutate!
-    @p2 = @p0.mutate!
-    @color = new Color!
+    @sx = Math.random! + 0.5
+    @sx = Math.random! + 0.5
+    @sy = Math.random! + 0.5
+    @rotate = Math.random! * 2 * Math.PI
+    @p = new Point!
+    @a = Math.random! * Math.PI / 4
+    @color1 = new Color!
+    @color2 = new Color!
 
   paint: !(ctx) ->
     ctx.save!
-    ctx.fillStyle = @color.fillStyle!
+    ctx.fillStyle = @gradient ctx, @color1, @color2
+    ctx.translate @p.x, @p.y
     ctx.rotate @rotate
+    ctx.scale @sx, @sy
     ctx.beginPath!
-    ctx.moveTo @p0.x, @p0.y
-    ctx.lineTo @p1.x, @p1.y
-    ctx.lineTo @p2.x, @p2.y
+    ctx.moveTo -shapeSize / 2, 0
+    ctx.lineTo shapeSize / 2, -shapeSize / 2 * Math.sin @a
+    ctx.lineTo shapeSize / 2,  shapeSize / 2 * Math.sin @a
     ctx.closePath!
     ctx.fill!
     ctx.restore!
@@ -248,16 +262,20 @@ class Triangle extends Shape
   mutate: ->
     roll = Math.random!
     child = @copy!
-    if roll < 0.2
-      child.p0 = @p0.mutate!
-    else if roll < 0.4
-      child.p1 = @p1.mutate!
-    else if roll < 0.6
-      child.p2 = @p2.mutate!
-    else if roll < 0.8
+    if roll < 0.20
       child.rotate += (lowWeightedRandom! - 0.5) * 2 * Math.PI
+    else if roll < 0.30
+      child.a += (lowWeightedRandom! - 0.5) * Math.PI / 16
+    else if roll < 0.40
+      child.sx += Math.random! - 0.5
+    else if roll < 0.60
+      child.sy += Math.random! - 0.5
+    else if roll < 0.80
+      child.p = @p.mutate!
+    else if roll < 0.90
+      child.color1 = @color1.mutate!
     else
-      child.color = @color.mutate!
+      child.color2 = @color2.mutate!
     return child
 
 class Oval extends Shape
@@ -267,16 +285,17 @@ class Oval extends Shape
     @sy = Math.random! + 0.5
     @rotate = Math.random! * 2 * Math.PI
     @center = new Point!
-    @r = randomRadius!
-    @color = new Color!
+    @color1 = new Color!
+    @color2 = new Color!
 
   paint: !(ctx) ->
     ctx.save!
-    ctx.fillStyle = @color.fillStyle!
+    ctx.fillStyle = @gradient ctx, @color1, @color2
+    ctx.translate @center.x, @center.y
     ctx.rotate @rotate
     ctx.scale @sx, @sy
     ctx.beginPath!
-    ctx.arc @center.x, @center.y, @r, 0 , 2 * Math.PI, false
+    ctx.arc 0, 0, shapeSize / 2, 0, 2 * Math.PI, false
     ctx.closePath!
     ctx.fill!
     ctx.restore!
@@ -289,17 +308,19 @@ class Oval extends Shape
     if roll < 0.20
       child.rotate += (lowWeightedRandom! - 0.5) * 2 * Math.PI
     else if roll < 0.40
-      child.sx += (Math.random! - 0.5) / 4
+      child.sx += Math.random! - 0.5
     else if roll < 0.60
-      child.sy += (Math.random! - 0.5) / 4
+      child.sy += Math.random! - 0.5
     else if roll < 0.80
       child.center = @center.mutate!
+    else if roll < 0.90
+      child.color1 = @color1.mutate!
     else
-      child.color = @color.mutate!
+      child.color2 = @color2.mutate!
     return child
 
 randomShape = ->
-  if Math.random! < 0.8
+  if Math.random! < 0.75
     new Triangle!
   else
     new Oval!
@@ -356,14 +377,14 @@ generateWeightMap = ->
       r = Math.min x + 1, imageWidth - 1
       d = Math.min y + 1, imageHeight - 1
       weight = (
-        diffPoint(targetData, x, y, targetData, l, u) +
-        diffPoint(targetData, x, y, targetData, x, u) +
-        diffPoint(targetData, x, y, targetData, r, u) +
-        diffPoint(targetData, x, y, targetData, l, y) +
-        diffPoint(targetData, x, y, targetData, r, y) +
-        diffPoint(targetData, x, y, targetData, l, d) +
-        diffPoint(targetData, x, y, targetData, x, d) +
-        diffPoint(targetData, x, y, targetData, r, d))
+        diffPoint(targetData, x, y, l, u) +
+        diffPoint(targetData, x, y, x, u) +
+        diffPoint(targetData, x, y, r, u) +
+        diffPoint(targetData, x, y, l, y) +
+        diffPoint(targetData, x, y, r, y) +
+        diffPoint(targetData, x, y, l, d) +
+        diffPoint(targetData, x, y, x, d) +
+        diffPoint(targetData, x, y, r, d))
       weightMap.push clamp(0.05, weight / 4, 1)
       ++x
     ++y
