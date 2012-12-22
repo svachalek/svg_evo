@@ -116,7 +116,7 @@ class Painting
     canvas = box.children[0]
     @paint canvas
     unless @score then @diffScore canvas
-    label = Math.floor(@score) + ' ' + @origin + (@age || '')
+    label = Math.floor(@score) + ' ' + @origin + ' ' + (@age || '')
     setText box.children[1], label
 
   diffScore: (canvas) ->
@@ -184,24 +184,24 @@ class Painting
       # lean towards mutating at the top
       i = Math.floor highWeightedRandom! * @shapes.length
       @shapes[i] = @shapes[i].mutate!
+      @origin = @shapes[i].origin
 
   mutate: ->
     child = new Painting @shapes
     roll = Math.random!
     if roll < 0.10
-      child.origin = 'A'
+      child.origin = '+S'
       child.add!
     else if roll < 0.20
-      child.origin = 'R'
+      child.origin = '-S'
       child.remove!
     else if roll < 0.30
-      child.origin = 'X'
+      child.origin = 'XS'
       child.swap!
     else if roll < 0.40
-      child.origin = 'F'
+      child.origin = 'FS'
       child.fork!
     else
-      child.origin = 'S'
       child.mutateShape!
     return child
 
@@ -252,20 +252,27 @@ class Shape
   mutate: ->
     roll = Math.random!
     child = @copy!
-    if roll < 0.20
+    if roll < 1/7
       child.rotate += (lowWeightedRandom! - 0.5) * 2 * Math.PI
-    else if roll < 0.30
+      child.origin = 'AR'
+    else if roll < 2/7
       child.a += (lowWeightedRandom! - 0.5) * Math.PI / 16
-    else if roll < 0.40
+      child.origin = 'AT'
+    else if roll < 3/7
       child.sx += Math.random! - 0.5
-    else if roll < 0.60
+      child.origin = 'SX'
+    else if roll < 4/7
       child.sy += Math.random! - 0.5
-    else if roll < 0.80
+      child.origin = 'SY'
+    else if roll < 5/7
       child.p = @p.mutate!
-    else if roll < 0.90
+      child.origin = '@P'
+    else if roll < 6/7
       child.color1 = @color1.mutate!
+      child.origin = 'C1'
     else
       child.color2 = @color2.mutate!
+      child.origin = 'C2'
     return child
 
 class Triangle extends Shape
