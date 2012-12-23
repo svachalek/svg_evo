@@ -76,11 +76,11 @@ class Point
     return this
 
   mutate: ->
-    r = Math.floor plusOrMinus(shapeSize / 8, shapeSize / 2)
+    r = plusOrMinus(shapeSize / 8, shapeSize / 2)
     a = Math.random! * Math.PI * 2
     dx = r * Math.cos a
     dy = r * Math.sin a
-    new Point @x + dx, @y + dy
+    new Point (Math.floor @x + dx), (Math.floor @y + dy)
 
 class Color
 
@@ -282,7 +282,9 @@ class Path
     else @randomize!
 
   randomize: !->
-    @points = [(new Point shapeSize, 0), (new Point (Math.random! - 0.5) * 2 * shapeSize, (Math.random! - 0.5) * 2 * shapeSize)]
+    x = Math.floor (Math.random! - 0.5) * 2 * shapeSize
+    y = Math.floor (Math.random! - 0.5) * 2 * shapeSize
+    @points = [(new Point shapeSize, 0), (new Point x, y)]
     @controls = [point.mutate! for point in @points]
 
   paint: !(ctx) ->
@@ -290,7 +292,10 @@ class Path
     for point, i in @points
       ctx.quadraticCurveTo point.x, point.y, @controls[i].x, @controls[i].y
 
-  clamp: (point) -> new Point clamp(-shapeSize, point.x, shapeSize), clamp(-shapeSize, point.y, shapeSize)
+  clamp: (point) ->
+    x = Math.floor clamp(-shapeSize, point.x, shapeSize)
+    y = Math.floor clamp(-shapeSize, point.y, shapeSize)
+    new Point x, y
 
   mutate: ->
     roll = Math.random! * 8
