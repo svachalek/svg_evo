@@ -18,6 +18,10 @@ body {
   font-size:        90%;
 }
 
+input, select {
+  width:            12em;
+}
+
 th {
   font-weight:      normal;
 }
@@ -93,7 +97,6 @@ th {
 
 td {
   text-align:       right;
-  min-width:        4em;
 }
 
 #legend {

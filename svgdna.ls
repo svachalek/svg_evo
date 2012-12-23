@@ -372,7 +372,7 @@ generateWeightMap = ->
   i = 0
   weightMap := []
   while i < edgeMap.length
-    weightMap.push clamp 0.05, edgeMap[i] + histoMap[i], 1
+    weightMap.push clamp 0.02, edgeMap[i] + histoMap[i], 1
     i++
   paintWeightMap!
 
@@ -500,10 +500,16 @@ window.addEventListener 'load', ->
     restart!
 
   imageSelect = document.getElementById 'imageSelect'
+  imageText = document.getElementById 'imageText'
+
   imageSelect.selectedIndex = Math.floor Math.random! * imageSelect.options.length
   targetLarge.src = img.src = 'images/' + imageSelect.value
   imageSelect.addEventListener 'change', ->
-    targetLarge.src = img.src = 'images/' + imageSelect.value
+    imageText.value = targetLarge.src = img.src = 'images/' + imageSelect.value
+
+  imageText.addEventListener 'change', ->
+    img.crossOrigin = ''
+    targetLarge.src = img.src = imageText.value
 
   textureSelect = document.getElementById 'textureSelect'
   textureSelect.addEventListener 'change', ->
