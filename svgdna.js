@@ -1,15 +1,14 @@
-var baseSize, shapeSize, imageWidth, imageHeight, imageShapes, imageRadius, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomByte, randomPainting, randomSign, clamp, plusOrMinus, setText, diffPoint, Point, Color, Painting, Shape, triangle, oval, targetData, bestData, breed, weightMap, generateWeightMap, paintWeightMap, restart, createBox;
-baseSize = 100;
+var paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, shapeSize, alphaMax, alphaMin, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomByte, randomPainting, randomSign, clamp, between, plusOrMinus, setText, diffPoint, Point, Color, Painting, Shape, Path, targetData, bestData, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
+paintingBaseSize = 100;
+paintingWidth = paintingBaseSize;
+paintingHeight = paintingBaseSize;
+paintingMaxShapes = 100;
 shapeSize = 20;
-imageWidth = baseSize;
-imageHeight = baseSize;
-imageShapes = 100;
-imageRadius = function(){
-  return Math.sqrt(imageWidth * imageWidth + imageHeight * imageHeight) / 2;
-};
-generationKeep = 5;
+alphaMax = 0.6;
+alphaMin = 0.3;
+generationKeep = 4;
 generationMutate = 15;
-generationCross = 3;
+generationCross = 2;
 generationSize = function(){
   return generationKeep + generationMutate + generationCross;
 };
@@ -34,10 +33,10 @@ highWeightedRandom = function(){
   return Math.sin(Math.random() * Math.PI / 2);
 };
 randomX = function(){
-  return Math.floor(Math.random() * imageWidth);
+  return Math.floor(Math.random() * paintingWidth);
 };
 randomY = function(){
-  return Math.floor(Math.random() * imageHeight);
+  return Math.floor(Math.random() * paintingHeight);
 };
 randomByte = function(){
   return Math.floor(Math.random() * 256);
@@ -61,16 +60,19 @@ clamp = function(min, n, max){
     return n;
   }
 };
+between = function(min, max){
+  return Math.random() * (max - min) + min;
+};
 plusOrMinus = function(min, max){
-  return randomSign() * (Math.random() * (max - min) + min);
+  return randomSign() * between(max, min);
 };
 setText = function(element, text){
   return element.innerText = element.textContent = text;
 };
 diffPoint = function(d, x1, y1, x2, y2){
   var b1, b2, dr, dg, db;
-  b1 = (x1 + y1 * imageWidth) * 4;
-  b2 = (x2 + y2 * imageWidth) * 4;
+  b1 = (x1 + y1 * paintingWidth) * 4;
+  b2 = (x2 + y2 * paintingWidth) * 4;
   dr = d[b1++] - d[b2++];
   dg = d[b1++] - d[b2++];
   db = d[b1++] - d[b2++];
@@ -117,7 +119,7 @@ Color = (function(){
     this.r = randomByte();
     this.g = randomByte();
     this.b = randomByte();
-    this.a = Math.random();
+    this.a = between(alphaMin, alphaMax);
     return this;
   };
   prototype.fillStyle = function(){
@@ -134,7 +136,7 @@ Color = (function(){
     } else if (roll < 0.75) {
       child.b = Math.floor(clamp(0, this.b + plusOrMinus(32, 64), 255));
     } else {
-      child.a = clamp(0, this.a + plusOrMinus(0.05, 0.20), 1);
+      child.a = clamp(alphaMin, this.a + plusOrMinus(0.05, 0.20), alphaMax);
     }
     return child;
   };
@@ -158,13 +160,13 @@ Painting = (function(){
   };
   prototype.paint = function(canvas, scale){
     var ctx, i$, ref$, len$, shape;
-    canvas.width = imageWidth * scale;
-    canvas.height = imageHeight * scale;
+    canvas.width = paintingWidth * scale;
+    canvas.height = paintingHeight * scale;
     ctx = canvas.getContext('2d');
     ctx.save();
     ctx.scale(scale, scale);
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, imageWidth, imageHeight);
+    ctx.fillRect(0, 0, paintingWidth, paintingHeight);
     for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
       shape = ref$[i$];
       shape.paint(ctx);
@@ -186,7 +188,7 @@ Painting = (function(){
     ctx = canvas.getContext('2d');
     score = 0;
     points = [];
-    data = ctx.getImageData(0, 0, imageWidth, imageHeight).data;
+    data = ctx.getImageData(0, 0, paintingWidth, paintingHeight).data;
     i = w = 0;
     l = data.length;
     while (i < l) {
@@ -203,10 +205,10 @@ Painting = (function(){
   };
   prototype.paintDiff = function(canvas){
     var ctx, imageData, data, i, i$, ref$, len$, point, color;
-    canvas.width = imageWidth;
-    canvas.height = imageHeight;
+    canvas.width = paintingWidth;
+    canvas.height = paintingHeight;
     ctx = canvas.getContext('2d');
-    imageData = ctx.createImageData(imageWidth, imageHeight);
+    imageData = ctx.createImageData(paintingWidth, paintingHeight);
     data = imageData.data;
     i = 0;
     for (i$ = 0, len$ = (ref$ = this.points).length; i$ < len$; ++i$) {
@@ -219,54 +221,27 @@ Painting = (function(){
     }
     return ctx.putImageData(imageData, 0, 0);
   };
-  prototype.remove = function(){
-    var i;
-    if (this.shapes.length > 1) {
-      i = Math.floor(Math.random() * this.shapes.length);
-      this.shapes.splice(i, 1);
-    }
-  };
-  prototype.add = function(){
-    if (this.shapes.length >= imageShapes) {
-      this.shapes.splice(0, 1);
-    }
-    this.shapes.push(new Shape());
-  };
-  prototype.swap = function(){
-    var i, tmp;
-    if (this.shapes.length >= 2) {
-      i = Math.floor(highWeightedRandom() * (this.shapes.length - 1));
-      tmp = this.shapes[i];
-      this.shapes[i] = this.shapes[i + 1];
-      this.shapes[i + 1] = tmp;
-    }
-  };
-  prototype.mutateShape = function(){
-    var i;
-    if (this.shapes.length) {
-      i = Math.floor(highWeightedRandom() * this.shapes.length);
-      this.shapes[i] = this.shapes[i].mutate();
-      this.origin = this.shapes[i].origin;
-    }
-  };
   prototype.mutate = function(){
-    var child, roll;
+    var child, roll, i, tmp;
     child = new Painting(this.shapes);
     roll = Math.random();
-    if (roll < 0.02 + generationNumber / 50000) {
+    if (roll < 0.01 && this.shapes.length >= 1) {
+      child.origin = 'remove';
+      i = Math.floor * (this.shapes.length - 1);
+      child.shapes.splice(i, 1);
+    } else if (roll < 0.02 && this.shapes.length < paintingMaxShapes) {
       child.origin = 'add';
-      child.add();
+      child.shapes.push(new Shape());
+    } else if (roll < 0.05 && this.shapes.length >= 2) {
+      child.origin = 'order';
+      i = Math.floor(highWeightedRandom() * (this.shapes.length - 1));
+      tmp = this.shapes[i];
+      child.shapes[i] = this.shapes[i + 1];
+      child.shapes[i + 1] = tmp;
     } else {
-      roll = Math.random();
-      if (roll < 0.04) {
-        child.origin = 'remove';
-        child.remove();
-      } else if (roll < 0.08) {
-        child.origin = 'order';
-        child.swap();
-      } else {
-        child.mutateShape();
-      }
+      i = Math.floor(highWeightedRandom() * this.shapes.length);
+      child.shapes[i] = this.shapes[i].mutate();
+      child.origin = child.shapes[i].origin;
     }
     return child;
   };
@@ -311,14 +286,13 @@ Shape = (function(){
     }
   }
   prototype.randomize = function(){
-    this.sx = Math.random() + 0.5;
-    this.sy = Math.random() + 0.5;
-    this.sx = this.sy = 1;
+    this.sx = (Math.random() + 0.2) / 2;
+    this.sy = (Math.random() + 0.2) / 2;
     this.rotate = Math.random() * 2 * Math.PI;
     this.p = new Point();
     this.color1 = new Color();
     this.color2 = new Color();
-    this.paintPath = Math.random() < 0.50 ? triangle : oval;
+    this.path = new Path();
   };
   prototype.paint = function(ctx){
     var gradient;
@@ -331,28 +305,28 @@ Shape = (function(){
     ctx.rotate(this.rotate);
     ctx.scale(this.sx, this.sy);
     ctx.beginPath();
-    this.paintPath(ctx);
+    this.path.paint(ctx);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
   };
   prototype.mutate = function(){
     var roll, child;
-    roll = Math.random() * 14;
+    roll = Math.random() * 13;
     child = new Shape(this);
-    if (roll < 1) {
-      child.paintPath = this.paintPath === triangle ? oval : triangle;
+    if (roll < 7) {
+      child.path = this.path.mutate();
       child.origin = 'shape';
-    } else if (roll < 2) {
+    } else if (roll < 8) {
       child.rotate += plusOrMinus(Math.PI / 32, Math.PI / 8);
       child.origin = 'orientation';
-    } else if (roll < 4) {
+    } else if (roll < 9) {
       child.sx += plusOrMinus(0.1, 0.5);
       child.origin = 'size';
-    } else if (roll < 6) {
+    } else if (roll < 10) {
       child.sy += plusOrMinus(0.1, 0.5);
       child.origin = 'size';
-    } else if (roll < 10) {
+    } else if (roll < 11) {
       child.p = this.p.mutate();
       child.origin = 'position';
     } else if (roll < 12) {
@@ -366,16 +340,57 @@ Shape = (function(){
   };
   return Shape;
 }());
-triangle = function(ctx){
-  var r;
-  r = shapeSize * 2 * Math.sqrt(Math.PI) / Math.pow(3, 3 / 4);
-  ctx.moveTo(-r, 0);
-  ctx.lineTo(r * Math.cos(Math.PI / 3), -r * Math.sin(Math.PI / 3));
-  ctx.lineTo(r * Math.cos(Math.PI / 3), r * Math.sin(Math.PI / 3));
-};
-oval = function(ctx){
-  ctx.arc(0, 0, shapeSize, 0, 2 * Math.PI, false);
-};
+Path = (function(){
+  Path.displayName = 'Path';
+  var prototype = Path.prototype, constructor = Path;
+  function Path(source){
+    if (source) {
+      this.points = source.points.slice(0);
+      this.controls = source.controls.slice(0);
+    } else {
+      this.randomize();
+    }
+  }
+  prototype.randomize = function(){
+    var res$, i$, ref$, len$, point;
+    this.points = [new Point(shapeSize, 0), new Point((Math.random() - 0.5) * 2 * shapeSize, (Math.random() - 0.5) * 2 * shapeSize)];
+    res$ = [];
+    for (i$ = 0, len$ = (ref$ = this.points).length; i$ < len$; ++i$) {
+      point = ref$[i$];
+      res$.push(point.mutate());
+    }
+    this.controls = res$;
+  };
+  prototype.paint = function(ctx){
+    var i$, ref$, len$, i, point;
+    ctx.moveTo(-shapeSize, 0);
+    for (i$ = 0, len$ = (ref$ = this.points).length; i$ < len$; ++i$) {
+      i = i$;
+      point = ref$[i$];
+      ctx.quadraticCurveTo(point.x, point.y, this.controls[i].x, this.controls[i].y);
+    }
+  };
+  prototype.mutate = function(){
+    var roll, child, i;
+    roll = Math.random() * 8;
+    child = new Path(this);
+    i = Math.floor(Math.random() * this.points.length);
+    if (roll < 1 && this.points.length < 10) {
+      child.points.splice(i, 0, this.points[i].mutate());
+      child.controls.splice(i, 0, child.points[i].mutate());
+    } else if (roll < 2 && i > 0) {
+      child.points.splice(i, 1);
+      child.controls.splice(i, 1);
+    } else if (roll < 5 && i > 0) {
+      child.points[i] = this.points[i].mutate();
+      child.controls[i] = new Point(child.controls[i].x + (child.points[i].x - this.points[i].x), child.controls[i].y + (child.points[i].y - this.points[i].x));
+    } else {
+      child.controls[i] = child.controls[i].mutate();
+    }
+    return child;
+  };
+  return Path;
+}());
 targetData = null;
 bestData = null;
 breed = function(){
@@ -405,6 +420,7 @@ breed = function(){
     child.show(crossBoxes[i]);
     if (child.score < paintings[mom].score) {
       paintings[mom] = child;
+      console.log(paintings[mom].shapes.length, paintings[dad].shapes.length, child.shapes.length);
       attempt('cross', true);
     } else if (child.score < paintings[dad].score) {
       paintings[dad] = child;
@@ -458,31 +474,72 @@ breed = function(){
 };
 weightMap = null;
 generateWeightMap = function(){
-  var y, x, u, l, r, d, weight;
+  var edgeMap, histoMap, i;
+  edgeMap = generateEdgeMap();
+  histoMap = generateHistoMap();
+  i = 0;
   weightMap = [];
+  while (i < edgeMap.length) {
+    weightMap.push(clamp(0.05, edgeMap[i] + histoMap[i], 1));
+    i++;
+  }
+  return paintWeightMap();
+};
+generateEdgeMap = function(){
+  var edgeMap, y, x, u, l, r, d, edge;
+  edgeMap = [];
   y = 0;
-  while (y < imageHeight) {
+  while (y < paintingHeight) {
     x = 0;
-    while (x < imageWidth) {
+    while (x < paintingWidth) {
       u = Math.max(y - 1, 0);
       l = Math.max(x - 1, 0);
-      r = Math.min(x + 1, imageWidth - 1);
-      d = Math.min(y + 1, imageHeight - 1);
-      weight = diffPoint(targetData, x, y, l, u) + diffPoint(targetData, x, y, x, u) + diffPoint(targetData, x, y, r, u) + diffPoint(targetData, x, y, l, y) + diffPoint(targetData, x, y, r, y) + diffPoint(targetData, x, y, l, d) + diffPoint(targetData, x, y, x, d) + diffPoint(targetData, x, y, r, d);
-      weightMap.push(clamp(0.05, weight / 4, 1));
+      r = Math.min(x + 1, paintingWidth - 1);
+      d = Math.min(y + 1, paintingHeight - 1);
+      edge = diffPoint(targetData, x, y, l, u) + diffPoint(targetData, x, y, x, u) + diffPoint(targetData, x, y, r, u) + diffPoint(targetData, x, y, l, y) + diffPoint(targetData, x, y, r, y) + diffPoint(targetData, x, y, l, d) + diffPoint(targetData, x, y, x, d) + diffPoint(targetData, x, y, r, d);
+      edgeMap.push(clamp(0, edge / 4, 1));
       ++x;
     }
     ++y;
   }
-  return paintWeightMap();
+  return edgeMap;
+};
+generateHistoMap = function(){
+  var histogram, i, max, r, g, b, a, color, histoMap, rarity;
+  histogram = [];
+  i = 0;
+  max = 0;
+  while (i < targetData.length) {
+    r = targetData[i++];
+    g = targetData[i++];
+    b = targetData[i++];
+    a = targetData[i++];
+    color = (r >> 5) << 6 | (g >> 5) << 3 | b >> 5;
+    histogram[color] = (histogram[color] || 0) + 1;
+    if (histogram[color] > max) {
+      max = histogram[color];
+    }
+  }
+  histoMap = [];
+  i = 0;
+  while (i < targetData.length) {
+    r = targetData[i++];
+    g = targetData[i++];
+    b = targetData[i++];
+    a = targetData[i++];
+    color = (r >> 5) << 6 | (g >> 5) << 3 | b >> 5;
+    rarity = histogram[color] / (paintingWidth * paintingHeight) * histogram.length;
+    histoMap.push(clamp(0, 1 - rarity, 1));
+  }
+  return histoMap;
 };
 paintWeightMap = function(){
   var weights, ctx, imageData, data, i, i$, ref$, len$, weight, color;
   weights = document.getElementById('weights');
-  weights.width = imageWidth;
-  weights.height = imageHeight;
+  weights.width = paintingWidth;
+  weights.height = paintingHeight;
   ctx = weights.getContext('2d');
-  imageData = ctx.createImageData(imageWidth, imageHeight);
+  imageData = ctx.createImageData(paintingWidth, paintingHeight);
   data = imageData.data;
   i = 0;
   for (i$ = 0, len$ = (ref$ = weightMap).length; i$ < len$; ++i$) {
@@ -495,12 +552,15 @@ paintWeightMap = function(){
   }
   return ctx.putImageData(imageData, 0, 0);
 };
-restart = function(){
-  var res$, i$, ref$, len$, n;
+resetStats = function(){
   cumulativeTime = 0;
   generationNumber = 0;
   attempts = {};
-  successes = {};
+  return successes = {};
+};
+restart = function(){
+  var res$, i$, ref$, len$, n;
+  resetStats();
   res$ = [];
   for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
     n = ref$[i$];
@@ -532,8 +592,8 @@ window.addEventListener('load', function(){
   target = document.getElementById('target');
   targetLarge = document.getElementById('target-large');
   bestLarge = document.getElementById('best-large');
-  target.width = imageWidth;
-  target.height = imageHeight;
+  target.width = paintingWidth;
+  target.height = paintingHeight;
   i = 0;
   for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
     n = ref$[i$];
@@ -557,28 +617,29 @@ window.addEventListener('load', function(){
   img.addEventListener('load', function(){
     var ctx;
     if (img.width > img.height) {
-      imageWidth = Math.floor(img.width / img.height * baseSize);
-      imageHeight = baseSize;
+      paintingWidth = Math.floor(img.width / img.height * paintingBaseSize);
+      paintingHeight = paintingBaseSize;
     } else {
-      imageHeight = Math.floor(img.height / img.width * baseSize);
-      imageWidth = baseSize;
+      paintingHeight = Math.floor(img.height / img.width * paintingBaseSize);
+      paintingWidth = paintingBaseSize;
     }
-    bestLarge.style.width = targetLarge.style.width = imageWidth * 3 + 'px';
-    bestLarge.style.height = targetLarge.style.height = imageHeight * 3 + 'px';
-    target.width = imageWidth;
-    target.height = imageHeight;
+    bestLarge.style.width = targetLarge.style.width = paintingWidth * 3 + 'px';
+    bestLarge.style.height = targetLarge.style.height = paintingHeight * 3 + 'px';
+    target.width = paintingWidth;
+    target.height = paintingHeight;
     ctx = target.getContext('2d');
-    ctx.drawImage(img, 0, 0, imageWidth, imageHeight);
-    targetData = ctx.getImageData(0, 0, imageWidth, imageHeight).data;
+    ctx.drawImage(img, 0, 0, paintingWidth, paintingHeight);
+    targetData = ctx.getImageData(0, 0, paintingWidth, paintingHeight).data;
     generateWeightMap();
     return restart();
   });
   imageSelect = document.getElementById('imageSelect');
   imageSelect.selectedIndex = Math.floor(Math.random() * imageSelect.options.length);
   targetLarge.src = img.src = 'images/' + imageSelect.value;
-  return imageSelect.addEventListener('change', function(){
+  imageSelect.addEventListener('change', function(){
     return targetLarge.src = img.src = 'images/' + imageSelect.value;
   });
+  return document.getElementById('reset-stats').addEventListener('click', resetStats);
   function fn$(){
     var i$, to$, results$ = [];
     for (i$ = 1, to$ = generationKeep; i$ <= to$; ++i$) {

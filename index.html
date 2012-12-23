@@ -15,12 +15,12 @@
 
 <div id='intro'>
   <p>
-  This page starts by creating a set of paintings that each contain one oval or triangle.
-  These paintings are mutated by adding, removing, or altering components, and also
+  This page starts by creating a set of paintings that each contain one oval, triangle, or
+  rectangle.  These paintings are mutated by adding, removing, or altering components, and also
   cross-bred with other paintings. 
   <p>
-  The results are compared to the image labeled <em>Target</em>,
-  paying particular attention to areas shown in the image labeled <em>Weights</em>.
+  The results are compared to the image labeled <em>Target</em>, paying particular attention 
+  to dark areas shown in the image labeled <em>Weights</em>.
   The dark areas in the <em>Differences</em> image show where the target image is most different
   from the best solution.
   <p>
@@ -43,18 +43,19 @@
       <option>Kitties.jpg</option>
       <option>ZhangJiaJie.jpg</option>
     </select>
-  <tr><th class='major'>Generation:     <td id='generation'>0
+  <tr><th class='major'>Generations:    <td id='generation'>0
   <tr><th class='major'>Time:           <td id='time'>0
   <tr><th>Generations/sec:              <td id='speed'>N/A
-  <tr><th>Add mutation success:         <td id='success-add'>0%
-  <tr><th>Remove mutation success:      <td id='success-remove'>0%
-  <tr><th>Order mutation success:       <td id='success-order'>0%
-  <tr><th>Size mutation success:        <td id='success-size'>0%
-  <tr><th>Position mutation success:    <td id='success-position'>0%
-  <tr><th>Orientation mutation success: <td id='success-orientation'>0%
-  <tr><th>Color mutation success:       <td id='success-color'>0%
-  <tr><th>Shape mutation success:       <td id='success-shape'>0%
+  <tr><th>Add shape success:            <td id='success-add'>0%
+  <tr><th>Remove shape success:         <td id='success-remove'>0%
+  <tr><th>Reorder shapes success:       <td id='success-order'>0%
+  <tr><th>Resize shape success:         <td id='success-size'>0%
+  <tr><th>Reposition shape success:     <td id='success-position'>0%
+  <tr><th>Reorient shape success:       <td id='success-orientation'>0%
+  <tr><th>Change outline success:       <td id='success-shape'>0%
+  <tr><th>Recolor success:              <td id='success-color'>0%
   <tr><th>Crossbreed success:           <td id='success-cross'>0%
+  <tr><th>                              <td><button id='reset-stats'>Reset Stats
 </table>
 
 <section id='boxes'>
@@ -86,6 +87,6 @@
 <p id='footer'>
   <a href='https://github.com/svachalek/svgdna'>The source code is here.</a>
   Written in LiveScript by <a href="mailto:svachalek@gmail.com">Scott Vachalek</a>.
-  Inspired by <a href='http://rogeralsing.com/2008/12/11/genetic-programming-mona-lisa-source-code-and-binaries/'>Roger Alsing's Mona Lisa</a>.
+  Inspired by <a href='http://rogeralsing.com/2008/12/07/genetic-programming-evolution-of-mona-lisa/'>Roger Alsing's Mona Lisa</a>.
 
 <script src='svgdna.js'></script>
