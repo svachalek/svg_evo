@@ -23,6 +23,9 @@ imageHeight = baseSize
 imageShapes = 100
 imageRadius = -> (Math.sqrt imageWidth * imageWidth + imageHeight * imageHeight) / 2
 
+alphaMax = 0.6
+alphaMin = 0.3
+
 generationKeep = 4
 generationMutate = 15
 generationCross = 2
@@ -53,7 +56,8 @@ randomPainting = -> Math.floor Math.random! * paintings.length
 randomSign = -> if Math.random! < 0.5 then -1 else 1
 
 clamp = (min, n, max) -> if n < min then min else if n > max then max else n
-plusOrMinus = (min, max) -> randomSign! * (Math.random! * (max - min) + min)
+between = (min, max) -> (Math.random! * (max - min) + min)
+plusOrMinus = (min, max) -> randomSign! * between max, min
 
 setText = (element, text) -> element.innerText = element.textContent = text
 
@@ -88,7 +92,7 @@ class Color
     @r = randomByte!
     @g = randomByte!
     @b = randomByte!
-    @a = Math.random! * 0.9 + 0.1
+    @a = between alphaMin, alphaMax
     return this
 
   fillStyle: -> 'rgba(' + @r + ',' + @g + ',' + @b + ',' + @a + ')'
@@ -103,7 +107,7 @@ class Color
     else if roll < 0.75
       child.b = Math.floor clamp(0, @b + plusOrMinus(32, 64), 255)
     else
-      child.a = clamp(0.1, @a + plusOrMinus(0.05, 0.20), 1)
+      child.a = clamp(alphaMin, @a + plusOrMinus(0.05, 0.20), alphaMax)
     return child
 
 class Painting
