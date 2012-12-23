@@ -170,44 +170,28 @@ class Painting
       data[i++] = 255   # a
     ctx.putImageData imageData, 0, 0
 
-  add: !->
-    if @shapes.length < paintingMaxShapes
-      @shapes.push new Shape!
-
-  remove: !->
-    if @shapes.length >= 1
-      i = Math.floor * (@shapes.length - 1)
-      @shapes.splice(i, 1)
-
-  swap: !->
-    if @shapes.length >= 2
-      # lean towards swapping at the top
-      i = Math.floor highWeightedRandom! * (@shapes.length - 1)
-      tmp = @shapes[i]
-      @shapes[i] = @shapes[i + 1]
-      @shapes[i + 1] = tmp
-
-  mutateShape: !->
-    if @shapes.length
-      # lean towards mutating at the top
-      i = Math.floor highWeightedRandom! * @shapes.length
-      @shapes[i] = @shapes[i].mutate!
-      @origin = @shapes[i].origin
-
   mutate: ->
     child = new Painting @shapes
     roll = Math.random!
-    if roll < 0.04
-      child.origin = 'add'
-      child.add!
-    else if roll < 0.08
+    if roll < 0.01 && @shapes.length >= 1
       child.origin = 'remove'
-      child.remove!
-    else if roll < 0.12
+      i = Math.floor * (@shapes.length - 1)
+      child.shapes.splice(i, 1)
+    else if roll < 0.02 && @shapes.length < paintingMaxShapes
+      child.origin = 'add'
+      child.shapes.push new Shape!
+    else if roll < 0.05 && @shapes.length >= 2
       child.origin = 'order'
-      child.swap!
+      # lean towards swapping at the top
+      i = Math.floor highWeightedRandom! * (@shapes.length - 1)
+      tmp = @shapes[i]
+      child.shapes[i] = @shapes[i + 1]
+      child.shapes[i + 1] = tmp
     else
-      child.mutateShape!
+      # lean towards mutating at the top
+      i = Math.floor highWeightedRandom! * @shapes.length
+      child.shapes[i] = @shapes[i].mutate!
+      child.origin = child.shapes[i].origin
     return child
 
   cross: (other) ->
@@ -243,7 +227,7 @@ class Shape
     @p = new Point!
     @color1 = new Color!
     @color2 = new Color!
-    @paintPath = paths[Math.floor Math.random! * paths.length]
+    @path = new Path!
 
   paint: !(ctx) ->
     ctx.save!
@@ -255,28 +239,27 @@ class Shape
     ctx.rotate @rotate
     ctx.scale @sx, @sy
     ctx.beginPath!
-    @paintPath ctx
+    @path.paint ctx
     ctx.closePath!
     ctx.fill!
     ctx.restore!
 
   mutate: ->
-    roll = Math.random! * 14
+    roll = Math.random! * 13
     child = new Shape this
-    if roll < 1
-      while child.paintPath == @paintPath
-        child.paintPath = paths[Math.floor Math.random! * paths.length]
+    if roll < 7
+      child.path = @path.mutate!
       child.origin = 'shape'
-    else if roll < 2
+    else if roll < 8
       child.rotate += plusOrMinus(Math.PI / 32, Math.PI / 8)
       child.origin = 'orientation'
-    else if roll < 4
+    else if roll < 9
       child.sx += plusOrMinus(0.1, 0.5)
       child.origin = 'size'
-    else if roll < 6
+    else if roll < 10
       child.sy += plusOrMinus(0.1, 0.5)
       child.origin = 'size'
-    else if roll < 10
+    else if roll < 11
       child.p = @p.mutate!
       child.origin = 'position'
     else if roll < 12
@@ -287,23 +270,40 @@ class Shape
       child.origin = 'color'
     return child
 
-triangle = !(ctx) ->
-  r = shapeSize * 2 * Math.sqrt(Math.PI) / Math.pow(3, 3/4)
-  ctx.moveTo -r, 0
-  ctx.lineTo  r * Math.cos(Math.PI / 3), -r * Math.sin(Math.PI / 3)
-  ctx.lineTo  r * Math.cos(Math.PI / 3),  r * Math.sin(Math.PI / 3)
+class Path
 
-oval = !(ctx) ->
-  ctx.arc 0, 0, shapeSize, 0, 2 * Math.PI, false
+  (source) ->
+    if source
+      @points = source.points.slice 0
+      @controls = source.controls.slice 0
+    else @randomize!
 
-rectangle = !(ctx) ->
-  r = shapeSize / 2 * Math.sqrt Math.PI
-  ctx.moveTo -r, -r
-  ctx.lineTo  r, -r
-  ctx.lineTo  r,  r
-  ctx.lineTo -r,  r
+  randomize: !->
+    @points = [(new Point shapeSize, 0), (new Point (Math.random! - 0.5) * 2 * shapeSize, (Math.random! - 0.5) * 2 * shapeSize)]
+    @controls = [point.mutate! for point in @points]
 
-paths = [triangle, oval, rectangle]
+  paint: !(ctx) ->
+    ctx.moveTo -shapeSize, 0
+    for point, i in @points
+      ctx.quadraticCurveTo point.x, point.y, @controls[i].x, @controls[i].y
+
+  mutate: ->
+    roll = Math.random! * 8
+    child = new Path this
+    i = Math.floor Math.random! * @points.length
+    # first point cannot be moved or deleted but curve can be adjusted
+    if roll < 1 && @points.length < 10
+      child.points.splice i, 0, @points[i].mutate!
+      child.controls.splice i, 0, child.points[i].mutate!
+    else if roll < 2 && i > 0
+      child.points.splice i, 1
+      child.controls.splice i, 1
+    else if roll < 5 && i > 0
+      child.points[i] = @points[i].mutate!
+      child.controls[i] = new Point child.controls[i].x + (child.points[i].x - @points[i].x), child.controls[i].y + (child.points[i].y - @points[i].x)
+    else
+      child.controls[i] = child.controls[i].mutate!
+    return child
 
 targetData = null
 bestData = null
@@ -330,6 +330,7 @@ breed = !->
     child.show crossBoxes[i]
     if child.score < paintings[mom].score
       paintings[mom] = child
+      console.log paintings[mom].shapes.length, paintings[dad].shapes.length, child.shapes.length
       attempt 'cross', true
     else if child.score < paintings[dad].score
       paintings[dad] = child
