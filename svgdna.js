@@ -158,15 +158,19 @@ Painting = (function(){
     this.origin = 'random';
     return this;
   };
-  prototype.paint = function(canvas, scale){
+  prototype.paint = function(canvas, scale, opaque){
     var ctx, i$, ref$, len$, shape;
     canvas.width = paintingWidth * scale;
     canvas.height = paintingHeight * scale;
     ctx = canvas.getContext('2d');
     ctx.save();
     ctx.scale(scale, scale);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, paintingWidth, paintingHeight);
+    if (opaque) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, paintingWidth, paintingHeight);
+    } else {
+      ctx.clearRect(0, 0, paintingWidth, paintingHeight);
+    }
     for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
       shape = ref$[i$];
       shape.paint(ctx);
@@ -176,7 +180,7 @@ Painting = (function(){
   prototype.show = function(box){
     var canvas, label;
     canvas = box.children[0];
-    this.paint(canvas, 1);
+    this.paint(canvas, 1, true);
     if (!this.score) {
       this.diffScore(canvas);
     }
@@ -370,22 +374,24 @@ Path = (function(){
       ctx.quadraticCurveTo(point.x, point.y, this.controls[i].x, this.controls[i].y);
     }
   };
+  prototype.clamp = function(point){
+    return new Point(clamp(-shapeSize, point.x, shapeSize), clamp(-shapeSize, point.y, shapeSize));
+  };
   prototype.mutate = function(){
     var roll, child, i;
     roll = Math.random() * 8;
     child = new Path(this);
     i = Math.floor(Math.random() * this.points.length);
     if (roll < 1 && this.points.length < 10) {
-      child.points.splice(i, 0, this.points[i].mutate());
-      child.controls.splice(i, 0, child.points[i].mutate());
+      child.points.splice(i, 0, this.clamp(this.points[i].mutate()));
+      child.controls.splice(i, 0, this.clamp(child.points[i].mutate()));
     } else if (roll < 2 && i > 0) {
       child.points.splice(i, 1);
       child.controls.splice(i, 1);
     } else if (roll < 5 && i > 0) {
-      child.points[i] = this.points[i].mutate();
-      child.controls[i] = new Point(child.controls[i].x + (child.points[i].x - this.points[i].x), child.controls[i].y + (child.points[i].y - this.points[i].x));
+      child.points[i] = this.clamp(this.points[i].mutate());
     } else {
-      child.controls[i] = child.controls[i].mutate();
+      child.controls[i] = this.clamp(child.controls[i].mutate());
     }
     return child;
   };
@@ -433,7 +439,7 @@ breed = function(){
     return a.score - b.score || a.shapes.length - b.shapes.length;
   });
   if (paintings[0] !== best) {
-    paintings[0].paint(document.getElementById('best-large'), 3 * (window.devicePixelRatio || 1));
+    paintings[0].paint(document.getElementById('best-large'), 3 * (window.devicePixelRatio || 1), false);
   }
   best = paintings[0];
   if (best.score != null) {
@@ -480,7 +486,7 @@ generateWeightMap = function(){
   i = 0;
   weightMap = [];
   while (i < edgeMap.length) {
-    weightMap.push(clamp(0.05, edgeMap[i] + histoMap[i], 1));
+    weightMap.push(clamp(0.02, edgeMap[i] + histoMap[i], 1));
     i++;
   }
   return paintWeightMap();
@@ -587,7 +593,7 @@ createBox = function(cls){
   return box;
 };
 window.addEventListener('load', function(){
-  var boxesElement, target, targetLarge, bestLarge, i, i$, ref$, len$, n, box, img, imageSelect;
+  var boxesElement, target, targetLarge, bestLarge, i, i$, ref$, len$, n, box, img, imageSelect, imageText, textureSelect;
   boxesElement = document.getElementById('boxes');
   target = document.getElementById('target');
   targetLarge = document.getElementById('target-large');
@@ -634,10 +640,19 @@ window.addEventListener('load', function(){
     return restart();
   });
   imageSelect = document.getElementById('imageSelect');
+  imageText = document.getElementById('imageText');
   imageSelect.selectedIndex = Math.floor(Math.random() * imageSelect.options.length);
   targetLarge.src = img.src = 'images/' + imageSelect.value;
   imageSelect.addEventListener('change', function(){
-    return targetLarge.src = img.src = 'images/' + imageSelect.value;
+    return imageText.value = targetLarge.src = img.src = 'images/' + imageSelect.value;
+  });
+  imageText.addEventListener('change', function(){
+    img.crossOrigin = '';
+    return targetLarge.src = img.src = imageText.value;
+  });
+  textureSelect = document.getElementById('textureSelect');
+  textureSelect.addEventListener('change', function(){
+    return bestLarge.style.backgroundImage = 'url(textures/' + textureSelect.value + ')';
   });
   return document.getElementById('reset-stats').addEventListener('click', resetStats);
   function fn$(){
