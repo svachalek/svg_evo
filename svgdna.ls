@@ -433,11 +433,14 @@ paintWeightMap = ->
     data[i++] = 255   # a
   ctx.putImageData imageData, 0, 0
 
-restart = ->
+resetStats = ->
   cumulativeTime := 0
   generationNumber := 0
   attempts := {}
   successes := {}
+
+restart = ->
+  resetStats!
   paintings := [new Painting! for n in [1 to generationKeep]]
   setTimeout breed, 0
 
@@ -494,4 +497,6 @@ window.addEventListener 'load', ->
   targetLarge.src = img.src = 'images/' + imageSelect.value
   imageSelect.addEventListener 'change', ->
     targetLarge.src = img.src = 'images/' + imageSelect.value
+
+  document.getElementById('reset-stats').addEventListener 'click', resetStats
 
