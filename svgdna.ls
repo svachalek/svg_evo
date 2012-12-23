@@ -25,7 +25,7 @@ imageRadius = -> (Math.sqrt imageWidth * imageWidth + imageHeight * imageHeight)
 
 generationKeep = 4
 generationMutate = 15
-generationCross = 4
+generationCross = 2
 generationSize = -> generationKeep + generationMutate + generationCross
 generationNumber = 0
 cumulativeTime = 0
@@ -168,11 +168,6 @@ class Painting
       data[i++] = 255   # a
     ctx.putImageData imageData, 0, 0
 
-  remove: !->
-    if @shapes.length > 1
-      i = Math.floor Math.random! * @shapes.length
-      @shapes.splice i, 1
-
   add: !->
     if @shapes.length >= imageShapes then @shapes.splice 0, 1
     @shapes.push new Shape!
@@ -199,9 +194,6 @@ class Painting
       child.origin = 'add'
       child.add!
     else if roll < 0.08
-      child.origin = 'remove'
-      child.remove!
-    else if roll < 0.12
       child.origin = 'order'
       child.swap!
     else
