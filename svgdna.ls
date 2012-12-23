@@ -242,7 +242,7 @@ class Shape
     @p = new Point!
     @color1 = new Color!
     @color2 = new Color!
-    @paintPath = if Math.random! < 0.50 then triangle else oval
+    @paintPath = paths[Math.floor Math.random! * paths.length]
 
   paint: !(ctx) ->
     ctx.save!
@@ -263,7 +263,8 @@ class Shape
     roll = Math.random! * 14
     child = new Shape this
     if roll < 1
-      child.paintPath = if @paintPath == triangle then oval else triangle
+      while child.paintPath == @paintPath
+        child.paintPath = paths[Math.floor Math.random! * paths.length]
       child.origin = 'shape'
     else if roll < 2
       child.rotate += plusOrMinus(Math.PI / 32, Math.PI / 8)
@@ -286,13 +287,22 @@ class Shape
     return child
 
 triangle = !(ctx) ->
-    r = shapeSize * 2 * Math.sqrt(Math.PI) / Math.pow(3, 3/4)
-    ctx.moveTo -r, 0
-    ctx.lineTo  r * Math.cos(Math.PI / 3), -r * Math.sin(Math.PI / 3)
-    ctx.lineTo  r * Math.cos(Math.PI / 3),  r * Math.sin(Math.PI / 3)
+  r = shapeSize * 2 * Math.sqrt(Math.PI) / Math.pow(3, 3/4)
+  ctx.moveTo -r, 0
+  ctx.lineTo  r * Math.cos(Math.PI / 3), -r * Math.sin(Math.PI / 3)
+  ctx.lineTo  r * Math.cos(Math.PI / 3),  r * Math.sin(Math.PI / 3)
 
 oval = !(ctx) ->
-    ctx.arc 0, 0, shapeSize, 0, 2 * Math.PI, false
+  ctx.arc 0, 0, shapeSize, 0, 2 * Math.PI, false
+
+rectangle = !(ctx) ->
+  r = shapeSize / 2 * Math.sqrt Math.PI
+  ctx.moveTo -r, -r
+  ctx.lineTo  r, -r
+  ctx.lineTo  r,  r
+  ctx.lineTo -r,  r
+
+paths = [triangle, oval, rectangle]
 
 targetData = null
 bestData = null
