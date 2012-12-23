@@ -334,7 +334,6 @@ breed = !->
     child.show crossBoxes[i]
     if child.score < paintings[mom].score
       paintings[mom] = child
-      console.log paintings[mom].shapes.length, paintings[dad].shapes.length, child.shapes.length
       attempt 'cross', true
     else if child.score < paintings[dad].score
       paintings[dad] = child
