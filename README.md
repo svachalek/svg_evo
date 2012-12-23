@@ -20,6 +20,7 @@ platform difference, I have added:
 * gradients
 * curves
 * cross-breeding (although it badly needs improvement)
+* weighted evaluation based on color histogram and edge detection
 
 For my own challenge I didn't read the source or run the program until I was
 generating pretty good results on my own. Comparing in hindsight one of the
