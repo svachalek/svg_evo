@@ -25,7 +25,7 @@ imageRadius = -> (Math.sqrt imageWidth * imageWidth + imageHeight * imageHeight)
 
 generationKeep = 4
 generationMutate = 15
-generationCross = 7
+generationCross = 4
 generationSize = -> generationKeep + generationMutate + generationCross
 generationNumber = 0
 cumulativeTime = 0
@@ -351,7 +351,17 @@ breed = !->
 weightMap = null
 
 generateWeightMap = ->
+  edgeMap = generateEdgeMap!
+  histoMap = generateHistoMap!
+  i = 0
   weightMap := []
+  while i < edgeMap.length
+    weightMap.push edgeMap[i] + histoMap[i] / 2
+    i++
+  paintWeightMap!
+
+generateEdgeMap = ->
+  edgeMap = []
   y = 0
   while y < imageHeight
     x = 0
@@ -360,7 +370,7 @@ generateWeightMap = ->
       l = Math.max x - 1, 0
       r = Math.min x + 1, imageWidth - 1
       d = Math.min y + 1, imageHeight - 1
-      weight = (
+      edge = (
         diffPoint(targetData, x, y, l, u) +
         diffPoint(targetData, x, y, x, u) +
         diffPoint(targetData, x, y, r, u) +
@@ -369,10 +379,34 @@ generateWeightMap = ->
         diffPoint(targetData, x, y, l, d) +
         diffPoint(targetData, x, y, x, d) +
         diffPoint(targetData, x, y, r, d))
-      weightMap.push clamp(0.05, weight / 4, 1)
+      edgeMap.push clamp(0.05, edge / 4, 1)
       ++x
     ++y
-  paintWeightMap!
+  return edgeMap
+
+generateHistoMap = ->
+  histogram = []
+  i = 0
+  max = 0
+  while i < targetData.length
+    r = targetData[i++]
+    g = targetData[i++]
+    b = targetData[i++]
+    a = targetData[i++]
+    color = (r .>>. 5) .<<. 6 .|. (g .>>. 5) .<<. 3 .|. (b .>>. 5)
+    histogram[color] = (histogram[color] || 0) + 1
+    if histogram[color] > max then max = histogram[color]
+  histoMap = []
+  i = 0
+  while i < targetData.length
+    r = targetData[i++]
+    g = targetData[i++]
+    b = targetData[i++]
+    a = targetData[i++]
+    color = (r .>>. 5) .<<. 6 .|. (g .>>. 5) .<<. 3 .|. (b .>>. 5)
+    rarity = histogram[color] / max
+    histoMap.push clamp(0.05, 1 - rarity, 1)
+  return histoMap
 
 paintWeightMap = ->
   weights = document.getElementById('weights')
