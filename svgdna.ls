@@ -88,7 +88,7 @@ class Color
     @r = randomByte!
     @g = randomByte!
     @b = randomByte!
-    @a = Math.random!
+    @a = Math.random! * 0.9 + 0.1
     return this
 
   fillStyle: -> 'rgba(' + @r + ',' + @g + ',' + @b + ',' + @a + ')'
@@ -103,7 +103,7 @@ class Color
     else if roll < 0.75
       child.b = Math.floor clamp(0, @b + plusOrMinus(32, 64), 255)
     else
-      child.a = clamp(0, @a + plusOrMinus(0.05, 0.20), 1)
+      child.a = clamp(0.1, @a + plusOrMinus(0.05, 0.20), 1)
     return child
 
 class Painting
@@ -235,9 +235,8 @@ class Shape
       @randomize!
 
   randomize: !->
-    @sx = Math.random! + 0.5
-    @sy = Math.random! + 0.5
-    @sx = @sy = 1
+    @sx = (Math.random! + 0.2) / 2
+    @sy = (Math.random! + 0.2) / 2
     @rotate = Math.random! * 2 * Math.PI
     @p = new Point!
     @color1 = new Color!
