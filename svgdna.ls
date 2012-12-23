@@ -357,7 +357,7 @@ generateWeightMap = ->
   i = 0
   weightMap := []
   while i < edgeMap.length
-    weightMap.push edgeMap[i] + histoMap[i] / 2
+    weightMap.push clamp 0.05, edgeMap[i] + histoMap[i], 1
     i++
   paintWeightMap!
 
@@ -380,7 +380,7 @@ generateEdgeMap = ->
         diffPoint(targetData, x, y, l, d) +
         diffPoint(targetData, x, y, x, d) +
         diffPoint(targetData, x, y, r, d))
-      edgeMap.push clamp(0.05, edge / 4, 1)
+      edgeMap.push clamp(0, edge / 4, 1)
       ++x
     ++y
   return edgeMap
@@ -405,8 +405,8 @@ generateHistoMap = ->
     b = targetData[i++]
     a = targetData[i++]
     color = (r .>>. 5) .<<. 6 .|. (g .>>. 5) .<<. 3 .|. (b .>>. 5)
-    rarity = histogram[color] / max
-    histoMap.push clamp(0.05, 1 - rarity, 1)
+    rarity = histogram[color] / (imageWidth * imageHeight) * histogram.length
+    histoMap.push clamp 0, 1 - rarity, 1
   return histoMap
 
 paintWeightMap = ->
