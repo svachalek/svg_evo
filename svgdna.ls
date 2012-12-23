@@ -287,22 +287,23 @@ class Path
     for point, i in @points
       ctx.quadraticCurveTo point.x, point.y, @controls[i].x, @controls[i].y
 
+  clamp: (point) -> new Point clamp(-shapeSize, point.x, shapeSize), clamp(-shapeSize, point.y, shapeSize)
+
   mutate: ->
     roll = Math.random! * 8
     child = new Path this
     i = Math.floor Math.random! * @points.length
     # first point cannot be moved or deleted but curve can be adjusted
     if roll < 1 && @points.length < 10
-      child.points.splice i, 0, @points[i].mutate!
-      child.controls.splice i, 0, child.points[i].mutate!
+      child.points.splice i, 0, @clamp @points[i].mutate!
+      child.controls.splice i, 0, @clamp child.points[i].mutate!
     else if roll < 2 && i > 0
       child.points.splice i, 1
       child.controls.splice i, 1
     else if roll < 5 && i > 0
-      child.points[i] = @points[i].mutate!
-      child.controls[i] = new Point child.controls[i].x + (child.points[i].x - @points[i].x), child.controls[i].y + (child.points[i].y - @points[i].x)
+      child.points[i] = @clamp @points[i].mutate!
     else
-      child.controls[i] = child.controls[i].mutate!
+      child.controls[i] = @clamp child.controls[i].mutate!
     return child
 
 targetData = null
