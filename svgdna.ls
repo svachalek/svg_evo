@@ -15,14 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with SVGDNA.  If not, see <http://www.gnu.org/licenses/>
 
-baseSize = 100
+paintingBaseSize = 100
+paintingWidth = paintingBaseSize
+paintingHeight = paintingBaseSize
+paintingMaxShapes = 100
+
 shapeSize = 20
-
-imageWidth = baseSize
-imageHeight = baseSize
-imageShapes = 100
-imageRadius = -> (Math.sqrt imageWidth * imageWidth + imageHeight * imageHeight) / 2
-
 alphaMax = 0.6
 alphaMin = 0.3
 
@@ -49,8 +47,8 @@ attempt = (type, success) ->
 lowWeightedRandom = -> Math.cos(Math.random! * Math.PI / 2)
 highWeightedRandom = -> Math.sin(Math.random! * Math.PI / 2)
 
-randomX = -> Math.floor Math.random! * imageWidth
-randomY = -> Math.floor Math.random! * imageHeight
+randomX = -> Math.floor Math.random! * paintingWidth
+randomY = -> Math.floor Math.random! * paintingHeight
 randomByte = -> Math.floor Math.random! * 256
 randomPainting = -> Math.floor Math.random! * paintings.length
 randomSign = -> if Math.random! < 0.5 then -1 else 1
@@ -62,8 +60,8 @@ plusOrMinus = (min, max) -> randomSign! * between max, min
 setText = (element, text) -> element.innerText = element.textContent = text
 
 diffPoint = (d, x1, y1, x2, y2) ->
-  b1 = (x1 + (y1 * imageWidth)) * 4
-  b2 = (x2 + (y2 * imageWidth)) * 4
+  b1 = (x1 + (y1 * paintingWidth)) * 4
+  b2 = (x2 + (y2 * paintingWidth)) * 4
   dr = d[b1++] - d[b2++]
   dg = d[b1++] - d[b2++]
   db = d[b1++] - d[b2++]
@@ -119,14 +117,14 @@ class Painting
     return this
 
   paint: !(canvas, scale) ->
-    canvas.width = imageWidth * scale
-    canvas.height = imageHeight * scale
+    canvas.width = paintingWidth * scale
+    canvas.height = paintingHeight * scale
     ctx = canvas.getContext '2d'
     ctx.save!
     ctx.scale scale, scale
     # lay down an opaque white, a clear background looks white but compares black
     ctx.fillStyle = '#ffffff'
-    ctx.fillRect 0, 0, imageWidth, imageHeight
+    ctx.fillRect 0, 0, paintingWidth, paintingHeight
     for shape in @shapes
       shape.paint ctx
     ctx.restore!
@@ -142,7 +140,7 @@ class Painting
     ctx = canvas.getContext '2d'
     score = 0
     points = []
-    data = (ctx.getImageData 0, 0, imageWidth, imageHeight).data
+    data = (ctx.getImageData 0, 0, paintingWidth, paintingHeight).data
     i = w = 0
     l = data.length
     while i < l
@@ -158,10 +156,10 @@ class Painting
     @points = points
 
   paintDiff: (canvas) ->
-    canvas.width = imageWidth
-    canvas.height = imageHeight
+    canvas.width = paintingWidth
+    canvas.height = paintingHeight
     ctx = canvas.getContext '2d'
-    imageData = ctx.createImageData(imageWidth, imageHeight)
+    imageData = ctx.createImageData(paintingWidth, paintingHeight)
     data = imageData.data
     i = 0
     for point in @points
@@ -173,8 +171,13 @@ class Painting
     ctx.putImageData imageData, 0, 0
 
   add: !->
-    if @shapes.length >= imageShapes then @shapes.splice 0, 1
-    @shapes.push new Shape!
+    if @shapes.length < paintingMaxShapes
+      @shapes.push new Shape!
+
+  remove: !->
+    if @shapes.length >= 1
+      i = Math.floor * (@shapes.length - 1)
+      @shapes.splice(i, 1)
 
   swap: !->
     if @shapes.length >= 2
@@ -198,6 +201,9 @@ class Painting
       child.origin = 'add'
       child.add!
     else if roll < 0.08
+      child.origin = 'remove'
+      child.swap!
+    else if roll < 0.12
       child.origin = 'order'
       child.swap!
     else
@@ -368,13 +374,13 @@ generateWeightMap = ->
 generateEdgeMap = ->
   edgeMap = []
   y = 0
-  while y < imageHeight
+  while y < paintingHeight
     x = 0
-    while x < imageWidth
+    while x < paintingWidth
       u = Math.max y - 1, 0
       l = Math.max x - 1, 0
-      r = Math.min x + 1, imageWidth - 1
-      d = Math.min y + 1, imageHeight - 1
+      r = Math.min x + 1, paintingWidth - 1
+      d = Math.min y + 1, paintingHeight - 1
       edge = (
         diffPoint(targetData, x, y, l, u) +
         diffPoint(targetData, x, y, x, u) +
@@ -409,16 +415,16 @@ generateHistoMap = ->
     b = targetData[i++]
     a = targetData[i++]
     color = (r .>>. 5) .<<. 6 .|. (g .>>. 5) .<<. 3 .|. (b .>>. 5)
-    rarity = histogram[color] / (imageWidth * imageHeight) * histogram.length
+    rarity = histogram[color] / (paintingWidth * paintingHeight) * histogram.length
     histoMap.push clamp 0, 1 - rarity, 1
   return histoMap
 
 paintWeightMap = ->
   weights = document.getElementById('weights')
-  weights.width = imageWidth
-  weights.height = imageHeight
+  weights.width = paintingWidth
+  weights.height = paintingHeight
   ctx = weights.getContext '2d'
-  imageData = ctx.createImageData(imageWidth, imageHeight)
+  imageData = ctx.createImageData(paintingWidth, paintingHeight)
   data = imageData.data
   i = 0
   for weight in weightMap
@@ -454,8 +460,8 @@ window.addEventListener 'load', ->
   target = document.getElementById('target')
   targetLarge = document.getElementById('target-large')
   bestLarge = document.getElementById('best-large')
-  target.width = imageWidth
-  target.height = imageHeight
+  target.width = paintingWidth
+  target.height = paintingHeight
   i = 0
   for n in [1 to generationKeep]
     box = createBox 'survivor'
@@ -473,18 +479,18 @@ window.addEventListener 'load', ->
   img = new Image!
   img.addEventListener 'load', ->
     if img.width > img.height
-      imageWidth := Math.floor img.width / img.height * baseSize
-      imageHeight := baseSize
+      paintingWidth := Math.floor img.width / img.height * paintingBaseSize
+      paintingHeight := paintingBaseSize
     else
-      imageHeight := Math.floor img.height / img.width * baseSize
-      imageWidth := baseSize
-    bestLarge.style.width = targetLarge.style.width = imageWidth * 3 + 'px'
-    bestLarge.style.height = targetLarge.style.height = imageHeight * 3 + 'px'
-    target.width = imageWidth
-    target.height = imageHeight
+      paintingHeight := Math.floor img.height / img.width * paintingBaseSize
+      paintingWidth := paintingBaseSize
+    bestLarge.style.width = targetLarge.style.width = paintingWidth * 3 + 'px'
+    bestLarge.style.height = targetLarge.style.height = paintingHeight * 3 + 'px'
+    target.width = paintingWidth
+    target.height = paintingHeight
     ctx = target.getContext '2d'
-    ctx.drawImage img, 0, 0, imageWidth, imageHeight
-    targetData := (ctx.getImageData 0, 0, imageWidth, imageHeight).data
+    ctx.drawImage img, 0, 0, paintingWidth, paintingHeight
+    targetData := (ctx.getImageData 0, 0, paintingWidth, paintingHeight).data
     generateWeightMap!
     restart!
 
