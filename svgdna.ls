@@ -116,22 +116,25 @@ class Painting
     @origin = 'random'
     return this
 
-  paint: !(canvas, scale) ->
+  paint: !(canvas, scale, opaque) ->
     canvas.width = paintingWidth * scale
     canvas.height = paintingHeight * scale
     ctx = canvas.getContext '2d'
     ctx.save!
     ctx.scale scale, scale
-    # lay down an opaque white, a clear background looks white but compares black
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect 0, 0, paintingWidth, paintingHeight
+    if opaque
+      # lay down an opaque white, a clear background looks white but compares black
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect 0, 0, paintingWidth, paintingHeight
+    else
+      ctx.clearRect 0, 0, paintingWidth, paintingHeight
     for shape in @shapes
       shape.paint ctx
     ctx.restore!
 
   show: (box) ->
     canvas = box.children[0]
-    @paint canvas, 1
+    @paint canvas, 1, true
     unless @score then @diffScore canvas
     label = Math.floor(@score) + (if @age then ' +' + @age else '')
     setText box.children[1], label
@@ -341,7 +344,7 @@ breed = !->
   # show the best
   paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
   if paintings[0] != best
-    paintings[0].paint (document.getElementById 'best-large'), 3 * (window.devicePixelRatio || 1);
+    paintings[0].paint (document.getElementById 'best-large'), 3 * (window.devicePixelRatio || 1), false;
   best = paintings[0]
   if best.score? then best.paintDiff document.getElementById 'diff'
   for painting, i in paintings
@@ -501,6 +504,10 @@ window.addEventListener 'load', ->
   targetLarge.src = img.src = 'images/' + imageSelect.value
   imageSelect.addEventListener 'change', ->
     targetLarge.src = img.src = 'images/' + imageSelect.value
+
+  textureSelect = document.getElementById 'textureSelect'
+  textureSelect.addEventListener 'change', ->
+    bestLarge.style.backgroundImage = 'url(textures/' + textureSelect.value + ')'
 
   document.getElementById('reset-stats').addEventListener 'click', resetStats
 
