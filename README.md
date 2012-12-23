@@ -47,9 +47,9 @@ Tuning
 In my own experiments, I have found that to create a single good result quickly,
 something like this works best:
 
-   generationKeep = 1
-   generationMutate = 15
-   generationCross = 0
+    generationKeep = 1
+    generationMutate = 15
+    generationCross = 0
 
 However, this produces only one result, while other settings produce multiple
 solutions of the same quality in much less time than these settings do.
