@@ -4,9 +4,10 @@ Vector Painting Evolution
 [This page][1] starts by creating a set of paintings that each contain one oval,
 triangle, or rectangle. These paintings are mutated by adding, removing, or
 altering components, and also cross-bred with other paintings. The results are
-compared to the image labeled **Target**, paying particular attention to areas
-shown in the image labeled **Weights**. The dark areas in the **Differences**
-image show where the target image is most different from the best solution.
+compared to the image labeled **Target**, paying particular attention to dark
+areas shown in the image labeled **Weights**. The dark areas in the
+**Differences** image show where the target image is most different from the
+best solution.
 
 When a mutation is better than its parent or when a cross is better than one of
 its parents it will replace it. The process repeats as fast as possible, and
