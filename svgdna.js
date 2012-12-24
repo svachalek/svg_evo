@@ -69,12 +69,19 @@ plusOrMinus = function(min, max){
   return randomSign() * between(max, min);
 };
 format = function(n){
-  if (n >= 100) {
-    return Math.floor(n).toString();
-  } else if (n < 0) {
-    return n.toString().slice(1);
+  var sign;
+  if (n < 0) {
+    n = -n;
+    sign = '-';
   } else {
-    return n.toString().slice(0, 4);
+    sign = '';
+  }
+  if (n >= 100) {
+    return sign + Math.floor(n).toString();
+  } else if (n < 1) {
+    return sign + n.toString().slice(1);
+  } else {
+    return sign + n.toString().slice(0, 4);
   }
 };
 setText = function(element, text){
