@@ -403,17 +403,19 @@ breed = !->
     else
       attempt child.origin, false
   for i in [0 to generationCross - 1]
-    mom = randomPainting!
-    dad = randomPainting!
-    while mom == dad
-      dad = randomPainting!
-    child = paintings[mom].cross paintings[dad]
+    m = randomPainting!
+    d = randomPainting!
+    while m == d
+      d = randomPainting!
+    mom = paintings[m]
+    dad = paintings[d]
+    child = mom.cross dad
     child.show crossBoxes[i]
-    if child.score < paintings[mom].score
-      paintings[mom] = child
+    if child.score < mom.score || (child.score == mom.score && child.shapes.length < mom.shapes.length)
+      paintings[m] = child
       attempt 'cross', true
-    else if child.score < paintings[dad].score
-      paintings[dad] = child
+    else if child.score < dad.score || (child.score == dad.score && child.shapes.length < dad.shapes.length)
+      paintings[d] = child
       attempt 'cross', true
     else
       attempt 'cross', false
