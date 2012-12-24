@@ -31,7 +31,7 @@ alphaMin = 0.3
 
 generationKeep = 4
 generationMutate = 15
-generationCross = 2
+generationCross = 4
 generationSize = -> generationKeep + generationMutate + generationCross
 generationNumber = 0
 cumulativeTime = 0
@@ -239,21 +239,9 @@ class Painting
     return child
 
   cross: (other) ->
-    i = j = 0
-    shapes = []
-    while i < @shapes.length && j < other.shapes.length
-      if Math.random! < 0.5
-        shapes.push @shapes[i++]
-      else
-        shapes.push other.shapes[j++]
-    while i < @shapes.length
-      shapes.push @shapes[i++]
-    while j < other.shapes.length
-      shapes.push other.shapes[j++]
-    n = Math.floor shapes.length / 2
-    i = 0
-    while i++ < n
-      shapes.splice (Math.floor Math.random! * shapes.length), 1
+    i = Math.round between 1, (@shapes.length - 2)
+    j = Math.round between i + 1, (@shapes.length - 1)
+    shapes = (@shapes.slice 0, i).concat(other.shapes.slice i, j).concat(@shapes.slice(j))
     new Painting shapes, 'cross'
 
   svg: ->
@@ -388,10 +376,7 @@ class Path
 targetData = null
 bestData = null
 
-breed = !->
-  startTime = Date.now!
-  previousPaintings = paintings.slice 0
-  # try some mutations
+mutate = !->
   for i in [0 to generationMutate - 1]
     n = randomPainting!
     mom = paintings[n]
@@ -402,6 +387,8 @@ breed = !->
       attempt child.origin, true
     else
       attempt child.origin, false
+
+crossover = !->
   for i in [0 to generationCross - 1]
     m = randomPainting!
     d = randomPainting!
@@ -411,14 +398,18 @@ breed = !->
     dad = paintings[d]
     child = mom.cross dad
     child.show crossBoxes[i]
-    if child.score < mom.score || (child.score == mom.score && child.shapes.length < mom.shapes.length)
-      paintings[m] = child
-      attempt 'cross', true
-    else if child.score < dad.score || (child.score == dad.score && child.shapes.length < dad.shapes.length)
-      paintings[d] = child
+    if child.score < mom.score && child.score < dad.score
+      paintings[if mom.score < dad.score then d else m] = child
       attempt 'cross', true
     else
       attempt 'cross', false
+
+breed = !->
+  startTime = Date.now!
+  previousPaintings = paintings.slice 0
+  # try some mutations
+  mutate!
+  crossover!
   # show the best
   paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
   if showIndex != lastShownIndex || paintings[showIndex] != previousPaintings[showIndex]
@@ -581,7 +572,7 @@ window.addEventListener 'load', ->
     generateWeightMap!
     storageKey := img.src
     if window.__proto__ && localStorage.getItem storageKey
-      paintings := JSON.parse localStorage.getItem(storageKey), reviver
+      paintings := (JSON.parse localStorage.getItem(storageKey), reviver).concat(paintings).slice 0, generationKeep
       resetStats!
     else
       restart!
