@@ -1,4 +1,5 @@
-var paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, shapeSize, alphaMax, alphaMin, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomByte, randomPainting, randomSign, clamp, between, plusOrMinus, setText, diffPoint, Point, Color, Painting, Shape, Path, targetData, bestData, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
+var storageKey, paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, shapeSize, alphaMax, alphaMin, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomByte, randomPainting, randomSign, clamp, between, plusOrMinus, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
+storageKey = null;
 paintingBaseSize = 100;
 paintingWidth = paintingBaseSize;
 paintingHeight = paintingBaseSize;
@@ -78,6 +79,22 @@ diffPoint = function(d, x1, y1, x2, y2){
   db = d[b1++] - d[b2++];
   return Math.sqrt((dr * dr + dg * dg + db * db) / (3 * 255 * 255));
 };
+stringifier = function(key, val){
+  if (typeof val === 'object') {
+    val.protoName = val.constructor.name;
+  }
+  if (key === 'diffMap') {
+    return void 8;
+  }
+  return val;
+};
+reviver = function(key, val){
+  if (val && val.protoName) {
+    val.constructor = window[val.protoName];
+    val.__proto__ = val.constructor.prototype;
+  }
+  return val;
+};
 Point = (function(){
   Point.displayName = 'Point';
   var prototype = Point.prototype, constructor = Point;
@@ -95,11 +112,11 @@ Point = (function(){
   };
   prototype.mutate = function(){
     var r, a, dx, dy;
-    r = Math.floor(plusOrMinus(shapeSize / 8, shapeSize / 2));
+    r = plusOrMinus(shapeSize / 8, shapeSize / 2);
     a = Math.random() * Math.PI * 2;
     dx = r * Math.cos(a);
     dy = r * Math.sin(a);
-    return new Point(this.x + dx, this.y + dy);
+    return new Point(Math.floor(this.x + dx), Math.floor(this.y + dy));
   };
   return Point;
 }());
@@ -188,10 +205,10 @@ Painting = (function(){
     return setText(box.children[1], label);
   };
   prototype.diffScore = function(canvas){
-    var ctx, score, points, data, i, w, l, dr, dg, db, diff;
+    var ctx, score, diffMap, data, i, w, l, dr, dg, db, diff;
     ctx = canvas.getContext('2d');
     score = 0;
-    points = [];
+    diffMap = [];
     data = ctx.getImageData(0, 0, paintingWidth, paintingHeight).data;
     i = w = 0;
     l = data.length;
@@ -201,21 +218,21 @@ Painting = (function(){
       db = data[i] - targetData[i++];
       i++;
       diff = Math.sqrt((dr * dr + dg * dg + db * db) / (3 * 255 * 255));
-      points.push(diff);
+      diffMap.push(diff);
       score += diff * weightMap[w++];
     }
     this.score = score;
-    return this.points = points;
+    return this.diffMap = diffMap;
   };
-  prototype.paintDiff = function(canvas){
-    var ctx, imageData, data, i, i$, ref$, len$, point, color;
+  prototype.paintDiffMap = function(canvas){
+    var ctx, diffData, data, i, i$, ref$, len$, point, color;
     canvas.width = paintingWidth;
     canvas.height = paintingHeight;
     ctx = canvas.getContext('2d');
-    imageData = ctx.createImageData(paintingWidth, paintingHeight);
-    data = imageData.data;
+    diffData = ctx.createImageData(paintingWidth, paintingHeight);
+    data = diffData.data;
     i = 0;
-    for (i$ = 0, len$ = (ref$ = this.points).length; i$ < len$; ++i$) {
+    for (i$ = 0, len$ = (ref$ = this.diffMap).length; i$ < len$; ++i$) {
       point = ref$[i$];
       color = Math.floor((1 - point) * 255);
       data[i++] = color;
@@ -223,7 +240,7 @@ Painting = (function(){
       data[i++] = color;
       data[i++] = 255;
     }
-    return ctx.putImageData(imageData, 0, 0);
+    return ctx.putImageData(diffData, 0, 0);
   };
   prototype.mutate = function(){
     var child, roll, i, tmp;
@@ -356,8 +373,10 @@ Path = (function(){
     }
   }
   prototype.randomize = function(){
-    var res$, i$, ref$, len$, point;
-    this.points = [new Point(shapeSize, 0), new Point((Math.random() - 0.5) * 2 * shapeSize, (Math.random() - 0.5) * 2 * shapeSize)];
+    var x, y, res$, i$, ref$, len$, point;
+    x = Math.floor((Math.random() - 0.5) * 2 * shapeSize);
+    y = Math.floor((Math.random() - 0.5) * 2 * shapeSize);
+    this.points = [new Point(shapeSize, 0), new Point(x, y)];
     res$ = [];
     for (i$ = 0, len$ = (ref$ = this.points).length; i$ < len$; ++i$) {
       point = ref$[i$];
@@ -375,7 +394,10 @@ Path = (function(){
     }
   };
   prototype.clamp = function(point){
-    return new Point(clamp(-shapeSize, point.x, shapeSize), clamp(-shapeSize, point.y, shapeSize));
+    var x, y;
+    x = Math.floor(clamp(-shapeSize, point.x, shapeSize));
+    y = Math.floor(clamp(-shapeSize, point.y, shapeSize));
+    return new Point(x, y);
   };
   prototype.mutate = function(){
     var roll, child, i;
@@ -426,7 +448,6 @@ breed = function(){
     child.show(crossBoxes[i]);
     if (child.score < paintings[mom].score) {
       paintings[mom] = child;
-      console.log(paintings[mom].shapes.length, paintings[dad].shapes.length, child.shapes.length);
       attempt('cross', true);
     } else if (child.score < paintings[dad].score) {
       paintings[dad] = child;
@@ -440,11 +461,11 @@ breed = function(){
   });
   if (paintings[0] !== best) {
     paintings[0].paint(document.getElementById('best-large'), 3 * (window.devicePixelRatio || 1), false);
+    if (paintings[0].diffMap) {
+      paintings[0].paintDiffMap(document.getElementById('diff'));
+    }
   }
   best = paintings[0];
-  if (best.score != null) {
-    best.paintDiff(document.getElementById('diff'));
-  }
   for (i$ = 0, len$ = (ref$ = paintings).length; i$ < len$; ++i$) {
     i = i$;
     painting = ref$[i$];
@@ -461,6 +482,9 @@ breed = function(){
     percent = Math.floor((successes[key] || 0) / val * 100) + '%';
     fraction = (successes[key] || 0) + '/' + val;
     setText(document.getElementById('success-' + key), fraction + ' (' + percent + ')');
+  }
+  if (generationNumber % 100 === 0) {
+    localStorage.setItem(storageKey, JSON.stringify(paintings, stringifier));
   }
   setTimeout(breed, 0);
   function fn$(){
@@ -565,22 +589,23 @@ resetStats = function(){
   return successes = {};
 };
 restart = function(){
-  var res$, i$, ref$, len$, n;
+  var n;
   resetStats();
-  res$ = [];
-  for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
-    n = ref$[i$];
-    res$.push(new Painting());
-  }
-  paintings = res$;
-  return setTimeout(breed, 0);
-  function fn$(){
-    var i$, to$, results$ = [];
-    for (i$ = 1, to$ = generationKeep; i$ <= to$; ++i$) {
-      results$.push(i$);
+  return paintings = (function(){
+    var i$, ref$, len$, results$ = [];
+    for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
+      n = ref$[i$];
+      results$.push(new Painting());
     }
     return results$;
-  }
+    function fn$(){
+      var i$, to$, results$ = [];
+      for (i$ = 1, to$ = generationKeep; i$ <= to$; ++i$) {
+        results$.push(i$);
+      }
+      return results$;
+    }
+  }());
 };
 createBox = function(cls){
   var canvas, box, label;
@@ -637,16 +662,37 @@ window.addEventListener('load', function(){
     ctx.drawImage(img, 0, 0, paintingWidth, paintingHeight);
     targetData = ctx.getImageData(0, 0, paintingWidth, paintingHeight).data;
     generateWeightMap();
-    return restart();
+    storageKey = img.src;
+    if (window.__proto__ && localStorage.getItem(storageKey)) {
+      paintings = JSON.parse(localStorage.getItem(storageKey), reviver);
+      resetStats();
+    } else {
+      restart();
+    }
+    localStorage.setItem('url', img.src);
+    return setTimeout(breed, 0);
   });
   imageSelect = document.getElementById('imageSelect');
   imageText = document.getElementById('imageText');
-  imageSelect.selectedIndex = Math.floor(Math.random() * imageSelect.options.length);
-  targetLarge.src = img.src = 'images/' + imageSelect.value;
+  if (localStorage.getItem('url')) {
+    imageSelect.selectedIndex = 0;
+    imageText.value = localStorage.getItem('url');
+  } else {
+    imageSelect.selectedIndex = 1 + Math.floor(Math.random() * imageSelect.options.length - 1);
+    imageText.value = 'images/' + imageSelect.value;
+  }
+  img.crossOrigin = '';
+  targetLarge.src = img.src = imageText.value;
   imageSelect.addEventListener('change', function(){
-    return imageText.value = targetLarge.src = img.src = 'images/' + imageSelect.value;
+    if (imageSelect.selectedIndex > 0) {
+      return imageText.value = targetLarge.src = img.src = 'images/' + imageSelect.value;
+    } else {
+      imageText.value = '';
+      return imageText.focus();
+    }
   });
   imageText.addEventListener('change', function(){
+    imageSelect.selectedIndex = 0;
     img.crossOrigin = '';
     return targetLarge.src = img.src = imageText.value;
   });
@@ -654,7 +700,7 @@ window.addEventListener('load', function(){
   textureSelect.addEventListener('change', function(){
     return bestLarge.style.backgroundImage = 'url(textures/' + textureSelect.value + ')';
   });
-  return document.getElementById('reset-stats').addEventListener('click', resetStats);
+  return document.getElementById('restart').addEventListener('click', restart);
   function fn$(){
     var i$, to$, results$ = [];
     for (i$ = 1, to$ = generationKeep; i$ <= to$; ++i$) {
