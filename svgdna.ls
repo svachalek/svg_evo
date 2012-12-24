@@ -215,7 +215,7 @@ class Painting
     roll = Math.random!
     if roll < 0.01 && @shapes.length >= 1
       child.origin = 'remove'
-      i = Math.floor * (@shapes.length - 1)
+      i = Math.floor * @shapes.length
       child.shapes.splice(i, 1)
     else if roll < 0.02 && @shapes.length < paintingMaxShapes
       child.origin = 'add'
