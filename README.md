@@ -29,8 +29,7 @@ selection of mutations; while his mutation decisions are independent and can
 result in zero, one, or multiple simultaneous changes, here we make one single
 mutation at random and constrain it in an attempt to make a change that has a
 maximum impact that is weighted towards small changes but is at minimum visible.
-(Minimums need to be adjusted for the size of the shape being changed but
-currently are not.)
+The range of mutation is increased for small objects and reduced for large ones.
 
 Building
 --------

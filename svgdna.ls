@@ -108,12 +108,12 @@ class Point
     @y = randomY!
     return this
 
-  mutate: ->
-    r = plusOrMinus(shapeSize / 8, shapeSize / 2)
+  mutate: (scale) ->
+    r = between 1, clamp(5, shapeSize / scale, 50)
     a = Math.random! * Math.PI * 2
     dx = r * Math.cos a
     dy = r * Math.sin a
-    new Point (Math.floor @x + dx), (Math.floor @y + dy)
+    new Point (Math.round @x + dx), (Math.round @y + dy)
 
   svg: -> @x + ',' + @y
 
@@ -132,17 +132,21 @@ class Color
 
   svg: -> "stop-color='rgb(" + @r + "," + @g + "," + @b + ")' stop-opacity='" + format(@a) + "'"
 
-  mutate: ->
+  mutate: (scale)  ->
+    min = clamp(4, 32 / scale, 64)
+    max = 2 * min
     child = new Color @r, @g, @b, @a
     roll = Math.random!
     if roll < 0.25
-      child.r = Math.floor clamp(0, @r + plusOrMinus(32, 64), 255)
+      child.r = Math.round clamp(0, @r + plusOrMinus(min, max), 255)
     else if roll < 0.50
-      child.g = Math.floor clamp(0, @g + plusOrMinus(32, 64), 255)
+      child.g = Math.round clamp(0, @g + plusOrMinus(min, max), 255)
     else if roll < 0.75
-      child.b = Math.floor clamp(0, @b + plusOrMinus(32, 64), 255)
+      child.b = Math.round clamp(0, @b + plusOrMinus(min, max), 255)
     else
-      child.a = clamp(alphaMin, @a + plusOrMinus(0.05, 0.20), alphaMax)
+      min = clamp(0.01, 0.05 / scale, 0.10)
+      max = 2 * min
+      child.a = clamp(alphaMin, @a + plusOrMinus(min, max), alphaMax)
     return child
 
 class Painting
@@ -301,12 +305,13 @@ class Shape
 
   mutate: ->
     roll = Math.random! * 13
+    scale = @sx * @sy
     child = new Shape this
     if roll < 7
-      child.path = @path.mutate!
+      child.path = @path.mutate scale
       child.origin = 'shape'
     else if roll < 8
-      child.rotate += plusOrMinus(Math.PI / 32, Math.PI / 8)
+      child.rotate += plusOrMinus(Math.PI / 32, Math.PI / 8) / scale
       child.origin = 'orientation'
     else if roll < 9
       child.sx += plusOrMinus(0.1, 0.5)
@@ -315,13 +320,13 @@ class Shape
       child.sy += plusOrMinus(0.1, 0.5)
       child.origin = 'size'
     else if roll < 11
-      child.p = @p.mutate!
+      child.p = @p.mutate scale
       child.origin = 'position'
     else if roll < 12
-      child.color1 = @color1.mutate!
+      child.color1 = @color1.mutate scale
       child.origin = 'color'
     else
-      child.color2 = @color2.mutate!
+      child.color2 = @color2.mutate scale
       child.origin = 'color'
     return child
 
@@ -349,7 +354,7 @@ class Path
     x = Math.floor (Math.random! - 0.5) * 2 * shapeSize
     y = Math.floor (Math.random! - 0.5) * 2 * shapeSize
     @points = [(new Point shapeSize, 0), (new Point x, y)]
-    @controls = [point.mutate! for point in @points]
+    @controls = [point.mutate 1 for point in @points]
 
   paint: !(ctx) ->
     ctx.moveTo -shapeSize, 0
@@ -361,21 +366,21 @@ class Path
     y = Math.floor clamp(-shapeSize, point.y, shapeSize)
     new Point x, y
 
-  mutate: ->
+  mutate: (scale) ->
     roll = Math.random! * 8
     child = new Path this
     i = Math.floor Math.random! * @points.length
     # first point cannot be moved or deleted but curve can be adjusted
     if roll < 1 && @points.length < 10
-      child.points.splice i, 0, @clamp @points[i].mutate!
-      child.controls.splice i, 0, @clamp child.points[i].mutate!
+      child.points.splice i, 0, @clamp @points[i].mutate scale
+      child.controls.splice i, 0, @clamp child.points[i].mutate scale
     else if roll < 2 && i > 0
       child.points.splice i, 1
       child.controls.splice i, 1
     else if roll < 5 && i > 0
-      child.points[i] = @clamp @points[i].mutate!
+      child.points[i] = @clamp @points[i].mutate scale
     else
-      child.controls[i] = @clamp child.controls[i].mutate!
+      child.controls[i] = @clamp child.controls[i].mutate scale
     return child
 
   svg: -> "M" + (-shapeSize) + ",0" + [("Q" + point.svg! + ' ' + @controls[i].svg!) for point, i in @points].join('')
