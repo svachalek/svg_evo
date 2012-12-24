@@ -1,5 +1,6 @@
-var storageKey, paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, shapeSize, alphaMax, alphaMin, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomByte, randomPainting, randomSign, clamp, between, plusOrMinus, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
+var storageKey, svgId, paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, shapeSize, alphaMax, alphaMin, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomByte, randomPainting, randomSign, clamp, between, plusOrMinus, format, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
 storageKey = null;
+svgId = 0;
 paintingBaseSize = 100;
 paintingWidth = paintingBaseSize;
 paintingHeight = paintingBaseSize;
@@ -67,6 +68,15 @@ between = function(min, max){
 plusOrMinus = function(min, max){
   return randomSign() * between(max, min);
 };
+format = function(n){
+  if (n >= 100) {
+    return Math.floor(n).toString();
+  } else if (n < 0) {
+    return n.toString().slice(1);
+  } else {
+    return n.toString().slice(0, 4);
+  }
+};
 setText = function(element, text){
   return element.innerText = element.textContent = text;
 };
@@ -118,6 +128,9 @@ Point = (function(){
     dy = r * Math.sin(a);
     return new Point(Math.floor(this.x + dx), Math.floor(this.y + dy));
   };
+  prototype.svg = function(){
+    return this.x + ',' + this.y;
+  };
   return Point;
 }());
 Color = (function(){
@@ -141,6 +154,9 @@ Color = (function(){
   };
   prototype.fillStyle = function(){
     return 'rgba(' + this.r + ',' + this.g + ',' + this.b + ',' + this.a + ')';
+  };
+  prototype.svg = function(){
+    return "stop-color='rgb(" + this.r + "," + this.g + "," + this.b + ")' stop-opacity='" + format(this.a) + "'";
   };
   prototype.mutate = function(){
     var child, roll;
@@ -290,6 +306,17 @@ Painting = (function(){
     }
     return new Painting(shapes, 'cross');
   };
+  prototype.svg = function(){
+    var shape;
+    return "<svg xmlns='http://www.w3.org/2000/svg' width='" + paintingWidth + "px' height='" + paintingHeight + "px' " + "viewbox='0 0 " + paintingWidth + " " + paintingHeight + "'>" + (function(){
+      var i$, ref$, len$, results$ = [];
+      for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
+        shape = ref$[i$];
+        results$.push(shape.svg());
+      }
+      return results$;
+    }.call(this)).join('') + "</svg>";
+  };
   return Painting;
 }());
 Shape = (function(){
@@ -359,6 +386,14 @@ Shape = (function(){
     }
     return child;
   };
+  prototype.svg = function(){
+    var gradientId, rotate, scale, transform;
+    gradientId = svgId++;
+    rotate = format(this.rotate / Math.PI * 180);
+    scale = format(this.sx) + "," + format(this.sy);
+    transform = "translate(" + this.p.svg() + ") rotate(" + rotate + ") scale(" + scale + ")";
+    return "<defs>" + "<linearGradient id='" + gradientId + "'>" + "<stop offset='0%' " + this.color1.svg() + "/>" + "<stop offset='100%' " + this.color2.svg() + "/>" + "</linearGradient>" + "</defs>" + "<path transform='" + transform + "' fill='url(#" + gradientId + ")' d='" + this.path.svg() + "'/>";
+  };
   return Shape;
 }());
 Path = (function(){
@@ -417,6 +452,18 @@ Path = (function(){
     }
     return child;
   };
+  prototype.svg = function(){
+    var i, point;
+    return "M" + (-shapeSize) + ",0" + (function(){
+      var i$, ref$, len$, results$ = [];
+      for (i$ = 0, len$ = (ref$ = this.points).length; i$ < len$; ++i$) {
+        i = i$;
+        point = ref$[i$];
+        results$.push("Q" + point.svg() + ' ' + this.controls[i].svg());
+      }
+      return results$;
+    }.call(this)).join('');
+  };
   return Path;
 }());
 targetData = null;
@@ -460,7 +507,7 @@ breed = function(){
     return a.score - b.score || a.shapes.length - b.shapes.length;
   });
   if (paintings[0] !== best) {
-    paintings[0].paint(document.getElementById('best-large'), 3 * (window.devicePixelRatio || 1), false);
+    document.getElementById('best-large').src = 'data:image/svg+xml;utf8,' + paintings[0].svg();
     if (paintings[0].diffMap) {
       paintings[0].paintDiffMap(document.getElementById('diff'));
     }
