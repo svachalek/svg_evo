@@ -16,6 +16,7 @@
 # along with SVGDNA.  If not, see <http://www.gnu.org/licenses/>
 
 storageKey = null
+svgId = 0
 
 paintingBaseSize = 100
 paintingWidth = paintingBaseSize
@@ -59,6 +60,14 @@ clamp = (min, n, max) -> if n < min then min else if n > max then max else n
 between = (min, max) -> (Math.random! * (max - min) + min)
 plusOrMinus = (min, max) -> randomSign! * between max, min
 
+format = (n) ->
+  if n >= 100
+    Math.floor(n).toString!
+  else if n < 0
+    n.toString!.slice(1)
+  else
+    n.toString!.slice(0,4)
+
 setText = (element, text) -> element.innerText = element.textContent = text
 
 diffPoint = (d, x1, y1, x2, y2) ->
@@ -97,6 +106,8 @@ class Point
     dy = r * Math.sin a
     new Point (Math.floor @x + dx), (Math.floor @y + dy)
 
+  svg: -> @x + ',' + @y
+
 class Color
 
   (@r, @g, @b, @a) -> unless @r? then @randomize!
@@ -109,6 +120,8 @@ class Color
     return this
 
   fillStyle: -> 'rgba(' + @r + ',' + @g + ',' + @b + ',' + @a + ')'
+
+  svg: -> "stop-color='rgb(" + @r + "," + @g + "," + @b + ")' stop-opacity='" + format(@a) + "'"
 
   mutate: ->
     child = new Color @r, @g, @b, @a
@@ -230,6 +243,12 @@ class Painting
       shapes.splice (Math.floor Math.random! * shapes.length), 1
     new Painting shapes, 'cross'
 
+  svg: ->
+    "<svg xmlns='http://www.w3.org/2000/svg' width='" + paintingWidth + "px' height='" + paintingHeight + "px' " +
+      "viewbox='0 0 " + paintingWidth + " " + paintingHeight + "'>" +
+      [shape.svg! for shape in @shapes].join('') +
+    "</svg>"
+
 class Shape
   (source) ->
     if source
@@ -288,6 +307,19 @@ class Shape
       child.origin = 'color'
     return child
 
+  svg: ->
+    gradientId = svgId++
+    rotate = format(@rotate / Math.PI * 180)
+    scale = format(@sx) + "," + format(@sy)
+    transform = "translate(" + @p.svg! + ") rotate(" + rotate + ") scale(" + scale + ")"
+    "<defs>" +
+      "<linearGradient id='" + gradientId + "'>" +
+        "<stop offset='0%' "   + @color1.svg! + "/>" +
+        "<stop offset='100%' " + @color2.svg! + "/>" +
+      "</linearGradient>" +
+    "</defs>" +
+    "<path transform='" + transform + "' fill='url(#" + gradientId + ")' d='" + @path.svg! + "'/>"
+
 class Path
 
   (source) ->
@@ -328,6 +360,8 @@ class Path
     else
       child.controls[i] = @clamp child.controls[i].mutate!
     return child
+
+  svg: -> "M" + (-shapeSize) + ",0" + [("Q" + point.svg! + ' ' + @controls[i].svg!) for point, i in @points].join('')
 
 targetData = null
 bestData = null
