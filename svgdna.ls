@@ -562,15 +562,15 @@ window.addEventListener 'load', ->
       resetStats!
     else
       restart!
-    localStorage.setItem 'url', img.src
+    sessionStorage.setItem 'url', img.src
     setTimeout breed, 0
 
   imageSelect = document.getElementById 'imageSelect'
   imageText = document.getElementById 'imageText'
 
-  if localStorage.getItem 'url'
+  if sessionStorage.getItem 'url'
     imageSelect.selectedIndex = 0
-    imageText.value = localStorage.getItem 'url'
+    imageText.value = sessionStorage.getItem 'url'
   else
     imageSelect.selectedIndex = 1 + Math.floor Math.random! * imageSelect.options.length - 1
     imageText.value = 'images/' + imageSelect.value
