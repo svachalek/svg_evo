@@ -559,7 +559,7 @@ window.addEventListener 'load', ->
     boxesElement.appendChild box
     mutantBoxes.push box
   for n in [1 to generationCross]
-    box = createBox 'crossbreed'
+    box = createBox 'crossover'
     boxesElement.appendChild box
     crossBoxes.push box
 

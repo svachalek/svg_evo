@@ -79,11 +79,11 @@ canvas {
   border-color:     #7f9f7f;
 }
 
-.crossbreed {
+.crossover {
   background-color: #9f7f7f;
 }
 
-.crossbreed, .crossbreed canvas {
+.crossover, .crossover canvas {
   border-color:     #9f7f7f;
 }
 
