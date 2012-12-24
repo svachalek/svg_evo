@@ -314,10 +314,10 @@ class Shape
       child.rotate += plusOrMinus(Math.PI / 32, Math.PI / 8) / scale
       child.origin = 'orientation'
     else if roll < 9
-      child.sx += plusOrMinus(0.1, 0.5)
+      child.sx = clamp 1/(shapeSize*2), @sy + plusOrMinus(0.1, 0.5), paintingBaseSize/(shapeSize*2)
       child.origin = 'size'
     else if roll < 10
-      child.sy += plusOrMinus(0.1, 0.5)
+      child.sy = clamp 1/(shapeSize*2), @sy + plusOrMinus(0.1, 0.5), paintingBaseSize/(shapeSize*2)
       child.origin = 'size'
     else if roll < 11
       child.p = @p.mutate scale
