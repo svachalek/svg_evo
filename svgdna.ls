@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with SVGDNA.  If not, see <http://www.gnu.org/licenses/>
 
+storageKey = null
+
 paintingBaseSize = 100
 paintingWidth = paintingBaseSize
 paintingHeight = paintingBaseSize
@@ -66,6 +68,19 @@ diffPoint = (d, x1, y1, x2, y2) ->
   dg = d[b1++] - d[b2++]
   db = d[b1++] - d[b2++]
   Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
+
+stringifier = (key, val) ->
+  if typeof val == 'object'
+    val.protoName = val.constructor.name
+  if key == 'diffMap'
+    return undefined
+  return val
+
+reviver = (key, val) ->
+  if val && val.protoName
+    val.constructor = window[val.protoName]
+    val.__proto__ = val.constructor.prototype
+  return val
 
 class Point
   (@x, @y) -> unless x? then @randomize!
@@ -142,7 +157,7 @@ class Painting
   diffScore: (canvas) ->
     ctx = canvas.getContext '2d'
     score = 0
-    points = []
+    diffMap = []
     data = (ctx.getImageData 0, 0, paintingWidth, paintingHeight).data
     i = w = 0
     l = data.length
@@ -153,25 +168,25 @@ class Painting
       i++
       # should match diffPoint above
       diff = Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
-      points.push diff
+      diffMap.push diff
       score += diff * weightMap[w++]
     @score = score
-    @points = points
+    @diffMap = diffMap
 
-  paintDiff: (canvas) ->
+  paintDiffMap: (canvas) ->
     canvas.width = paintingWidth
     canvas.height = paintingHeight
     ctx = canvas.getContext '2d'
-    imageData = ctx.createImageData(paintingWidth, paintingHeight)
-    data = imageData.data
+    diffData = ctx.createImageData(paintingWidth, paintingHeight)
+    data = diffData.data
     i = 0
-    for point in @points
+    for point in @diffMap
       color = Math.floor (1 - point) * 255
       data[i++] = color # r
       data[i++] = color # g
       data[i++] = color # b
       data[i++] = 255   # a
-    ctx.putImageData imageData, 0, 0
+    ctx.putImageData diffData, 0, 0
 
   mutate: ->
     child = new Painting @shapes
@@ -349,8 +364,8 @@ breed = !->
   paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
   if paintings[0] != best
     paintings[0].paint (document.getElementById 'best-large'), 3 * (window.devicePixelRatio || 1), false;
+    if paintings[0].diffMap then paintings[0].paintDiffMap document.getElementById 'diff'
   best = paintings[0]
-  if best.score? then best.paintDiff document.getElementById 'diff'
   for painting, i in paintings
     painting.age = (painting.age || 0) + 1
     painting.show survivorBoxes[i]
@@ -360,12 +375,14 @@ breed = !->
   setText document.getElementById('generation'), generationNumber
   setText document.getElementById('time'), (Math.floor cumulativeTime / 1000) + 's'
   setText document.getElementById('speed'), Math.floor generationNumber / (cumulativeTime / 1000)
-  # for key, val of successes
-  #  setText document.getElementById('success-' + key), 
   for key, val of attempts
     percent = (Math.floor (successes[key] || 0) / val * 100) + '%'
     fraction = (successes[key] || 0) + '/' + val
     setText document.getElementById('success-' + key), fraction + ' (' + percent + ')'
+  # save
+  if generationNumber % 100 == 0
+    localStorage.setItem storageKey, JSON.stringify paintings, stringifier
+  # and repeat
   setTimeout breed, 0
 
 weightMap = null
@@ -453,7 +470,6 @@ resetStats = ->
 restart = ->
   resetStats!
   paintings := [new Painting! for n in [1 to generationKeep]]
-  setTimeout breed, 0
 
 createBox = (cls) ->
   canvas = document.createElement 'canvas'
@@ -501,17 +517,36 @@ window.addEventListener 'load', ->
     ctx.drawImage img, 0, 0, paintingWidth, paintingHeight
     targetData := (ctx.getImageData 0, 0, paintingWidth, paintingHeight).data
     generateWeightMap!
-    restart!
+    storageKey := img.src
+    if window.__proto__ && localStorage.getItem storageKey
+      paintings := JSON.parse localStorage.getItem(storageKey), reviver
+      resetStats!
+    else
+      restart!
+    localStorage.setItem 'url', img.src
+    setTimeout breed, 0
 
   imageSelect = document.getElementById 'imageSelect'
   imageText = document.getElementById 'imageText'
 
-  imageSelect.selectedIndex = Math.floor Math.random! * imageSelect.options.length
-  targetLarge.src = img.src = 'images/' + imageSelect.value
+  if localStorage.getItem 'url'
+    imageSelect.selectedIndex = 0
+    imageText.value = localStorage.getItem 'url'
+  else
+    imageSelect.selectedIndex = 1 + Math.floor Math.random! * imageSelect.options.length - 1
+    imageText.value = 'images/' + imageSelect.value
+
+  img.crossOrigin = ''
+  targetLarge.src = img.src = imageText.value
   imageSelect.addEventListener 'change', ->
-    imageText.value = targetLarge.src = img.src = 'images/' + imageSelect.value
+    if imageSelect.selectedIndex > 0
+      imageText.value = targetLarge.src = img.src = 'images/' + imageSelect.value
+    else
+      imageText.value = ''
+      imageText.focus!
 
   imageText.addEventListener 'change', ->
+    imageSelect.selectedIndex = 0
     img.crossOrigin = ''
     targetLarge.src = img.src = imageText.value
 
@@ -519,5 +554,5 @@ window.addEventListener 'load', ->
   textureSelect.addEventListener 'change', ->
     bestLarge.style.backgroundImage = 'url(textures/' + textureSelect.value + ')'
 
-  document.getElementById('reset-stats').addEventListener 'click', resetStats
+  document.getElementById('restart').addEventListener 'click', restart
 
