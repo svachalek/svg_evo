@@ -87,14 +87,16 @@ diffPoint = (d, x1, y1, x2, y2) ->
 
 stringifier = (key, val) ->
   if typeof val == 'object'
-    val.protoName = val.constructor.name
+    val._ = val.constructor.name
+  if typeof val == 'number'
+    return (Math.round val * 1000) / 1000
   if key == 'diffMap'
     return undefined
   return val
 
 reviver = (key, val) ->
-  if val && val.protoName
-    val.constructor = window[val.protoName]
+  if val && val._
+    val.constructor = window[val._]
     val.__proto__ = val.constructor.prototype
   return val
 
