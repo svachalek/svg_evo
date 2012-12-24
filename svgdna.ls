@@ -61,12 +61,17 @@ between = (min, max) -> (Math.random! * (max - min) + min)
 plusOrMinus = (min, max) -> randomSign! * between max, min
 
 format = (n) ->
-  if n >= 100
-    Math.floor(n).toString!
-  else if n < 0
-    n.toString!.slice(1)
+  if n < 0
+    n = -n
+    sign = '-'
   else
-    n.toString!.slice(0,4)
+    sign = ''
+  if n >= 100
+    sign + Math.floor(n).toString!
+  else if n < 1
+    sign + n.toString!.slice(1)
+  else
+    sign + n.toString!.slice(0,4)
 
 setText = (element, text) -> element.innerText = element.textContent = text
 
@@ -397,7 +402,7 @@ breed = !->
   # show the best
   paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
   if paintings[0] != best
-    paintings[0].paint (document.getElementById 'best-large'), 3 * (window.devicePixelRatio || 1), false;
+    (document.getElementById 'best-large').src = 'data:image/svg+xml;utf8,' + paintings[0].svg!
     if paintings[0].diffMap then paintings[0].paintDiffMap document.getElementById 'diff'
   best = paintings[0]
   for painting, i in paintings
