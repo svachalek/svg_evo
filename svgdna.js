@@ -100,7 +100,10 @@ diffPoint = function(d, x1, y1, x2, y2){
 };
 stringifier = function(key, val){
   if (typeof val === 'object') {
-    val.protoName = val.constructor.name;
+    val._ = val.constructor.name;
+  }
+  if (typeof val === 'number') {
+    return Math.round(val * 1000) / 1000;
   }
   if (key === 'diffMap') {
     return void 8;
@@ -108,8 +111,8 @@ stringifier = function(key, val){
   return val;
 };
 reviver = function(key, val){
-  if (val && val.protoName) {
-    val.constructor = window[val.protoName];
+  if (val && val._) {
+    val.constructor = window[val._];
     val.__proto__ = val.constructor.prototype;
   }
   return val;
@@ -771,10 +774,7 @@ window.addEventListener('load', function(){
   textureSelect.addEventListener('change', function(){
     return bestLarge.style.backgroundImage = 'url(textures/' + textureSelect.value + ')';
   });
-  document.getElementById('restart').addEventListener('click', restart);
-  return bestLarge.addEventListener('click', function(){
-    return window.location = bestLarge.src;
-  });
+  return document.getElementById('restart').addEventListener('click', restart);
   function fn$(){
     var i$, to$, results$ = [];
     for (i$ = 1, to$ = generationKeep; i$ <= to$; ++i$) {
