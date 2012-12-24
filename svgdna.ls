@@ -17,6 +17,8 @@
 
 storageKey = null
 svgId = 0
+showIndex = 0
+lastShownIndex = 0
 
 paintingBaseSize = 100
 paintingWidth = paintingBaseSize
@@ -381,6 +383,7 @@ bestData = null
 
 breed = !->
   startTime = Date.now!
+  previousPaintings = paintings.slice 0
   # try some mutations
   for i in [0 to generationMutate - 1]
     n = randomPainting!
@@ -409,9 +412,10 @@ breed = !->
       attempt 'cross', false
   # show the best
   paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
-  if paintings[0] != best
-    (document.getElementById 'best-large').src = 'data:image/svg+xml;utf8,' + paintings[0].svg!
-    if paintings[0].diffMap then paintings[0].paintDiffMap document.getElementById 'diff'
+  if showIndex != lastShownIndex || paintings[showIndex] != previousPaintings[showIndex]
+    lastShownIndex = showIndex
+    (document.getElementById 'best-large').src = 'data:image/svg+xml;utf8,' + paintings[showIndex].svg!
+    if paintings[showIndex].diffMap then paintings[showIndex].paintDiffMap document.getElementById 'diff'
   best = paintings[0]
   for painting, i in paintings
     painting.age = (painting.age || 0) + 1
@@ -539,6 +543,8 @@ window.addEventListener 'load', ->
     box = createBox 'survivor'
     boxesElement.appendChild box
     survivorBoxes.push box
+    box.dataIndex = n - 1
+    box.addEventListener 'click', !-> showIndex := @dataIndex
   for n in [1 to generationMutate]
     box = createBox 'mutant'
     boxesElement.appendChild box
