@@ -130,7 +130,9 @@ class Color
 
   fillStyle: -> 'rgba(' + @r + ',' + @g + ',' + @b + ',' + @a + ')'
 
-  svg: -> "stop-color='rgb(" + @r + "," + @g + "," + @b + ")' stop-opacity='" + format(@a) + "'"
+  svg: ->
+    rgb = '00000' + (@b .|. (@g .<<. 8) .|. (@r .<<. 16)).toString(16);
+    "stop-color='#" + rgb.substr(rgb.length - 6, 6) + "' stop-opacity='" + format(@a) + "'"
 
   mutate: (scale)  ->
     min = clamp(4, 32 / scale, 64)
