@@ -31,7 +31,7 @@ alphaMin = 0.3
 
 generationKeep = 4
 generationMutate = 15
-generationCross = 4
+generationCross = 1
 generationSize = -> generationKeep + generationMutate + generationCross
 generationNumber = 0
 cumulativeTime = 0
