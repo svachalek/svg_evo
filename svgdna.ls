@@ -241,8 +241,8 @@ class Painting
     return child
 
   cross: (other) ->
-    i = Math.round between 1, (@shapes.length - 2)
-    j = Math.round between i + 1, (@shapes.length - 1)
+    i = Math.round between @shapes.length / 4, @shapes.length
+    j = i + Math.round between @shapes.length * 1/4, @shapes.length / 3/4
     shapes = (@shapes.slice 0, i).concat(other.shapes.slice i, j).concat(@shapes.slice(j))
     new Painting shapes, 'cross'
 
