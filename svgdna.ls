@@ -86,11 +86,11 @@ diffPoint = (d, x1, y1, x2, y2) ->
   Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
 
 stringifier = (key, val) ->
-  if typeof val == 'object'
+  if val && typeof val == 'object'
     val._ = val.constructor.name
   if typeof val == 'number'
     return (Math.round val * 1000) / 1000
-  if key == 'diffMap'
+  if key == 'diffMap' || key == 'canvas'
     return undefined
   return val
 
@@ -177,8 +177,10 @@ class Painting
 
   show: (box) ->
     canvas = box.children[0]
-    @paint canvas, 1, true
-    unless @score then @diffScore canvas
+    unless @canvas == canvas then
+      @paint canvas, 1, true
+      @diffScore canvas
+      @canvas = canvas
     label = 'Score: ' + Math.floor(@score) + (if @age then ' Age: ' + @age else '')
     setText box.children[1], label
 
@@ -416,7 +418,7 @@ breed = !->
   mutate!
   crossover!
   # show the best
-  paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
+  # paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
   if showIndex != lastShownIndex || paintings[showIndex] != previousPaintings[showIndex]
     lastShownIndex = showIndex
     (document.getElementById 'best-large').src = 'data:image/svg+xml;utf8,' + paintings[showIndex].svg!
