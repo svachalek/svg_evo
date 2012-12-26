@@ -179,7 +179,7 @@ class Painting
     canvas = box.children[0]
     @paint canvas, 1, true
     unless @score then @diffScore canvas
-    label = Math.floor(@score) + (if @age then ' +' + @age else '')
+    label = 'Score: ' + Math.floor(@score) + (if @age then ' Age: ' + @age else '')
     setText box.children[1], label
 
   diffScore: (canvas) ->
