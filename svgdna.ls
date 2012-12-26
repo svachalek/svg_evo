@@ -202,6 +202,9 @@ class Painting
     @diffMap = diffMap
 
   paintDiffMap: (canvas) ->
+    unless @diffMap then
+      @paint canvas
+      @diffScore canvas
     canvas.width = paintingWidth
     canvas.height = paintingHeight
     ctx = canvas.getContext '2d'
@@ -417,7 +420,7 @@ breed = !->
   if showIndex != lastShownIndex || paintings[showIndex] != previousPaintings[showIndex]
     lastShownIndex = showIndex
     (document.getElementById 'best-large').src = 'data:image/svg+xml;utf8,' + paintings[showIndex].svg!
-    if paintings[showIndex].diffMap then paintings[showIndex].paintDiffMap document.getElementById 'diff'
+    paintings[showIndex].paintDiffMap document.getElementById 'diff'
   best = paintings[0]
   for painting, i in paintings
     painting.age = (painting.age || 0) + 1
