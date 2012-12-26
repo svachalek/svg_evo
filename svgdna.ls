@@ -557,7 +557,8 @@ window.addEventListener 'load', ->
     crossBoxes.push box
 
   img = new Image!
-  img.addEventListener 'load', ->
+  img.addEventListener 'load', !->
+    targetLarge.src = img.src
     if img.width > img.height
       paintingWidth := Math.floor img.width / img.height * paintingBaseSize
       paintingHeight := paintingBaseSize
@@ -581,6 +582,9 @@ window.addEventListener 'load', ->
     sessionStorage.setItem 'url', img.src
     setTimeout breed, 0
 
+  img.onerror = !->
+    alert 'Failed to load the selected image. It is likely that the image server does not allow Cross-Origin Resource Sharing.'
+
   imageSelect = document.getElementById 'imageSelect'
   imageText = document.getElementById 'imageText'
 
@@ -592,10 +596,10 @@ window.addEventListener 'load', ->
     imageText.value = 'images/' + imageSelect.value
 
   img.crossOrigin = ''
-  targetLarge.src = img.src = imageText.value
+  img.src = imageText.value
   imageSelect.addEventListener 'change', ->
     if imageSelect.selectedIndex > 0
-      imageText.value = targetLarge.src = img.src = 'images/' + imageSelect.value
+      imageText.value = img.src = 'images/' + imageSelect.value
     else
       imageText.value = ''
       imageText.focus!
@@ -603,7 +607,7 @@ window.addEventListener 'load', ->
   imageText.addEventListener 'change', ->
     imageSelect.selectedIndex = 0
     img.crossOrigin = ''
-    targetLarge.src = img.src = imageText.value
+    img.src = imageText.value
 
   textureSelect = document.getElementById 'textureSelect'
   textureSelect.addEventListener 'change', ->
