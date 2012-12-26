@@ -718,6 +718,7 @@ window.addEventListener('load', function(){
   img = new Image();
   img.addEventListener('load', function(){
     var ctx;
+    targetLarge.src = img.src;
     if (img.width > img.height) {
       paintingWidth = Math.floor(img.width / img.height * paintingBaseSize);
       paintingHeight = paintingBaseSize;
@@ -741,8 +742,11 @@ window.addEventListener('load', function(){
       restart();
     }
     sessionStorage.setItem('url', img.src);
-    return setTimeout(breed, 0);
+    setTimeout(breed, 0);
   });
+  img.onerror = function(){
+    alert('Failed to load the selected image. It is likely that the image server does not allow Cross-Origin Resource Sharing.');
+  };
   imageSelect = document.getElementById('imageSelect');
   imageText = document.getElementById('imageText');
   if (sessionStorage.getItem('url')) {
@@ -753,10 +757,10 @@ window.addEventListener('load', function(){
     imageText.value = 'images/' + imageSelect.value;
   }
   img.crossOrigin = '';
-  targetLarge.src = img.src = imageText.value;
+  img.src = imageText.value;
   imageSelect.addEventListener('change', function(){
     if (imageSelect.selectedIndex > 0) {
-      return imageText.value = targetLarge.src = img.src = 'images/' + imageSelect.value;
+      return imageText.value = img.src = 'images/' + imageSelect.value;
     } else {
       imageText.value = '';
       return imageText.focus();
@@ -765,7 +769,7 @@ window.addEventListener('load', function(){
   imageText.addEventListener('change', function(){
     imageSelect.selectedIndex = 0;
     img.crossOrigin = '';
-    return targetLarge.src = img.src = imageText.value;
+    return img.src = imageText.value;
   });
   textureSelect = document.getElementById('textureSelect');
   textureSelect.addEventListener('change', function(){
