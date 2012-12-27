@@ -54,15 +54,11 @@ body {
   z-index: 1;
 }
 
-a {
+a:link, a:visited {
+  color: #aaf;
   text-decoration: none;
 }
 
-a:link, a:active, a:hover {
-  color: #ccccff;
+a:link:hover, a:visited:hover {
+  text-decoration: underline;
 }
-
-body a:link:visited {
-  color: #ffccff;
-}
-
