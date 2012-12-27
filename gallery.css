@@ -43,6 +43,7 @@ body {
 #imgbox img {
   position: absolute;
   border: 8px ridge #999;
+  opacity: 0;
 }
 
 #source {
