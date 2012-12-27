@@ -34,7 +34,6 @@ body {
 
 #imgbox {
   position: absolute;
-  background-color: white;
   top: 60px;
   bottom: 60px;
   right: 20px;
@@ -51,6 +50,7 @@ body {
 }
 
 #painting {
+  background-color: white;
   background: url(textures/creampaper.png);
   z-index: 1;
 }
