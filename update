@@ -1,8 +1,9 @@
-cp ~/svgdna/*.html .
-cp ~/svgdna/*.css .
-cp ~/svgdna/images/* images
-cp ~/svgdna/textures/* textures
-cp ~/svgdna/*.js .
+cp ../*.html .
+cp ../*.css .
+cp ../images/* images
+cp ../textures/* textures
+cp ../*.js .
+
 git add .
 git commit -m 'update to latest build'
 git push origin gh-pages
