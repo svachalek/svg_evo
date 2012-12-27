@@ -31,7 +31,7 @@ timeoutImage = null
 timeoutOpacity = null
 
 scaleImages = !->
-  border = parseInt document.defaultView.getComputedStyle(source).borderWidth
+  border = parseInt (document.defaultView.getComputedStyle(source).borderLeftWidth || source.currentStyle.borderWidth)
   bw = box.clientWidth - 2 * border
   bh = box.clientHeight - 2 * border
   nw = source.naturalWidth

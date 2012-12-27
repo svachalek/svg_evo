@@ -424,7 +424,7 @@ breed = !->
   if showIndex != lastShownIndex || paintings[showIndex] != previousPaintings[showIndex]
     lastShownIndex = showIndex
     # the base64 encoding shouldn't be necessary but Firefox can't handle the image otherwise
-    (document.getElementById 'best-large').src = 'data:image/svg+xml;base64,' + btoa paintings[showIndex].svg!
+    (document.getElementById 'best-large').src = 'data:image/svg+xml;base64,' + base64.encode paintings[showIndex].svg!
     paintings[showIndex].paintDiffMap document.getElementById 'diff'
   best = paintings[0]
   for painting, i in paintings
