@@ -26,8 +26,10 @@ paintingHeight = paintingBaseSize
 paintingMaxShapes = 100
 
 shapeSize = 20
-alphaMax = 0.6
-alphaMin = 0.3
+alphaMax = 60
+alphaMin = 30
+scaleMax = Math.round paintingBaseSize/(shapeSize*2) * 100
+scaleMin = Math.round 1/(shapeSize*2) * 100
 
 generationKeep = 4
 generationMutate = 15
@@ -49,17 +51,13 @@ attempt = (type, success) ->
   if success
     successes[type] = (successes[type] || 0) + 1
 
-lowWeightedRandom = -> Math.cos(Math.random! * Math.PI / 2)
-highWeightedRandom = -> Math.sin(Math.random! * Math.PI / 2)
-
-randomX = -> Math.floor Math.random! * paintingWidth
-randomY = -> Math.floor Math.random! * paintingHeight
-randomByte = -> Math.floor Math.random! * 256
-randomPainting = -> Math.floor Math.random! * paintings.length
+between = (min, max) -> Math.floor (Math.random! * (max - min + 1) + min)
+betweenHigh = (min, max) -> Math.floor (Math.sin(Math.random! * Math.PI / 2) * (max - min + 1) + min)
+randomByte = -> between 0, 255
+randomPainting = -> between 0, paintings.length - 1
 randomSign = -> if Math.random! < 0.5 then -1 else 1
 
 clamp = (min, n, max) -> if n < min then min else if n > max then max else n
-between = (min, max) -> (Math.random! * (max - min) + min)
 plusOrMinus = (min, max) -> randomSign! * between max, min
 
 format = (n) ->
@@ -88,8 +86,6 @@ diffPoint = (d, x1, y1, x2, y2) ->
 stringifier = (key, val) ->
   if val && typeof val == 'object'
     val._ = val.constructor.name
-  if typeof val == 'number'
-    return (Math.round val * 1000) / 1000
   if key == 'diffMap' || key == 'canvas'
     return undefined
   return val
@@ -104,13 +100,13 @@ class Point
   (@x, @y) -> unless x? then @randomize!
 
   randomize: ->
-    @x = randomX!
-    @y = randomY!
+    @x = between 1, paintingWidth
+    @y = between 1, paintingHeight
     return this
 
   mutate: (scale) ->
     r = between 1, clamp(5, shapeSize / scale, 50)
-    a = Math.random! * Math.PI * 2
+    a = between 1, 360
     dx = r * Math.cos a
     dy = r * Math.sin a
     new Point (Math.round @x + dx), (Math.round @y + dy)
@@ -128,27 +124,27 @@ class Color
     @a = between alphaMin, alphaMax
     return this
 
-  fillStyle: -> 'rgba(' + @r + ',' + @g + ',' + @b + ',' + @a + ')'
+  fillStyle: -> 'rgba(' + @r + ',' + @g + ',' + @b + ',' + @a/100 + ')'
 
   svg: ->
     rgb = '00000' + (@b .|. (@g .<<. 8) .|. (@r .<<. 16)).toString(16);
-    "stop-color='#" + rgb.substr(rgb.length - 6, 6) + "' stop-opacity='" + format(@a) + "'"
+    "stop-color='#" + rgb.substr(rgb.length - 6, 6) + "' stop-opacity='" + format(@a / 100) + "'"
 
   mutate: (scale)  ->
-    min = clamp(4, 32 / scale, 64)
+    min = clamp 4, (Math.round 32 / scale), 64
     max = 2 * min
     child = new Color @r, @g, @b, @a
-    roll = Math.random!
-    if roll < 0.25
-      child.r = Math.round clamp(0, @r + plusOrMinus(min, max), 255)
-    else if roll < 0.50
-      child.g = Math.round clamp(0, @g + plusOrMinus(min, max), 255)
-    else if roll < 0.75
-      child.b = Math.round clamp(0, @b + plusOrMinus(min, max), 255)
-    else
-      min = clamp(0.01, 0.05 / scale, 0.10)
-      max = 2 * min
-      child.a = clamp(alphaMin, @a + plusOrMinus(min, max), alphaMax)
+    switch between 1, 4
+      when 1
+        child.r = Math.round clamp 0, @r + plusOrMinus(min, max), 255
+      when 2
+        child.g = Math.round clamp 0, @g + plusOrMinus(min, max), 255
+      when 3
+        child.b = Math.round clamp 0, @b + plusOrMinus(min, max), 255
+      when 4
+        min = clamp 1, (Math.round 5 / scale), 10
+        max = 2 * min
+        child.a = clamp alphaMin, @a + plusOrMinus(min, max), alphaMax
     return child
 
 class Painting
@@ -172,6 +168,8 @@ class Painting
     else
       ctx.clearRect 0, 0, paintingWidth, paintingHeight
     for shape in @shapes
+      unless shape
+        console.log this
       shape.paint ctx
     ctx.restore!
 
@@ -223,31 +221,29 @@ class Painting
 
   mutate: ->
     child = new Painting @shapes
-    roll = Math.random!
-    if roll < 0.01 && @shapes.length >= 1
+    roll = between 0, 99
+    if roll < 1 && @shapes.length >= 1
       child.origin = 'remove'
-      i = Math.floor * @shapes.length
+      i = betweenHigh 0, @shapes.length - 1
       child.shapes.splice(i, 1)
-    else if roll < 0.02 && @shapes.length < paintingMaxShapes
+    else if roll < 2 && @shapes.length < paintingMaxShapes
       child.origin = 'add'
       child.shapes.push new Shape!
-    else if roll < 0.05 && @shapes.length >= 2
+    else if roll < 5 && @shapes.length >= 2
       child.origin = 'order'
-      # lean towards swapping at the top
-      i = Math.floor highWeightedRandom! * (@shapes.length - 1)
+      i = betweenHigh 0, @shapes.length - 2 # not the last
       tmp = @shapes[i]
       child.shapes[i] = @shapes[i + 1]
       child.shapes[i + 1] = tmp
     else
-      # lean towards mutating at the top
-      i = Math.floor highWeightedRandom! * @shapes.length
+      i = betweenHigh 0, @shapes.length - 1
       child.shapes[i] = @shapes[i].mutate!
       child.origin = child.shapes[i].origin
     return child
 
   cross: (other) ->
-    i = Math.round between @shapes.length / 4, @shapes.length
-    j = i + Math.round between @shapes.length * 1/4, @shapes.length / 3/4
+    i = between (Math.round @shapes.length / 4), @shapes.length
+    j = i + between (Math.round @shapes.length / 4), @shapes.length / 3/4
     shapes = (@shapes.slice 0, i).concat(other.shapes.slice i, j).concat(@shapes.slice(j))
     new Painting shapes, 'cross'
 
@@ -275,9 +271,9 @@ class Shape
       @randomize!
 
   randomize: !->
-    @sx = (Math.random! + 0.2) / 2
-    @sy = (Math.random! + 0.2) / 2
-    @rotate = Math.random! * 2 * Math.PI
+    @sx = clamp scaleMin, (between 20, 50), scaleMax
+    @sy = clamp scaleMin, (between 20, 50), scaleMax
+    @rotate = between 1, 360
     @p = new Point!
     @color1 = new Color!
     @color2 = new Color!
@@ -290,8 +286,8 @@ class Shape
     gradient.addColorStop 1, @color2.fillStyle!
     ctx.fillStyle = gradient
     ctx.translate @p.x, @p.y
-    ctx.rotate @rotate
-    ctx.scale @sx, @sy
+    ctx.rotate @rotate * Math.PI / 180
+    ctx.scale @sx / 100, @sy / 100
     ctx.beginPath!
     @path.paint ctx
     ctx.closePath!
@@ -299,20 +295,20 @@ class Shape
     ctx.restore!
 
   mutate: ->
-    roll = Math.random! * 13
-    scale = @sx * @sy
+    roll = between 0, 13
+    scale = @sx * @sy / 10000 # 100x100 = 1, smaller is lower, bigger is higher
     child = new Shape this
     if roll < 7
       child.path = @path.mutate scale
       child.origin = 'shape'
     else if roll < 8
-      child.rotate += plusOrMinus(Math.PI / 32, Math.PI / 8) / scale
+      child.rotate += plusOrMinus(5 / scale, 20 / scale)
       child.origin = 'orientation'
     else if roll < 9
-      child.sx = clamp 1/(shapeSize*2), @sy + plusOrMinus(0.1, 0.5), paintingBaseSize/(shapeSize*2)
+      child.sx = clamp scaleMin, @sx + plusOrMinus(scaleMin, scaleMax / 8), scaleMax
       child.origin = 'size'
     else if roll < 10
-      child.sy = clamp 1/(shapeSize*2), @sy + plusOrMinus(0.1, 0.5), paintingBaseSize/(shapeSize*2)
+      child.sy = clamp scaleMin, @sy + plusOrMinus(scaleMin, scaleMax / 8), scaleMax
       child.origin = 'size'
     else if roll < 11
       child.p = @p.mutate scale
@@ -332,9 +328,8 @@ class Shape
     "</linearGradient>"
 
   svgPath: (gradientId) ->
-    rotate = format(@rotate / Math.PI * 180)
-    scale = format(@sx) + "," + format(@sy)
-    transform = "translate(" + @p.svg! + ") rotate(" + rotate + ") scale(" + scale + ")"
+    scale = format(@sx / 100) + "," + format(@sy / 100)
+    transform = "translate(" + @p.svg! + ") rotate(" + @rotate + ") scale(" + scale + ")"
     "<path transform='" + transform + "' fill='url(#" + gradientId + ")' d='" + @path.svg! + "'/>"
 
 class Path
@@ -346,8 +341,8 @@ class Path
     else @randomize!
 
   randomize: !->
-    x = Math.floor (Math.random! - 0.5) * 2 * shapeSize
-    y = Math.floor (Math.random! - 0.5) * 2 * shapeSize
+    x = between -shapeSize, +shapeSize
+    y = between -shapeSize, +shapeSize
     @points = [(new Point shapeSize, 0), (new Point x, y)]
     @controls = [point.mutate 1 for point in @points]
 
@@ -357,14 +352,14 @@ class Path
       ctx.quadraticCurveTo point.x, point.y, @controls[i].x, @controls[i].y
 
   clamp: (point) ->
-    x = Math.floor clamp(-shapeSize, point.x, shapeSize)
-    y = Math.floor clamp(-shapeSize, point.y, shapeSize)
+    x = clamp -shapeSize, point.x, +shapeSize
+    y = clamp -shapeSize, point.y, +shapeSize
     new Point x, y
 
   mutate: (scale) ->
-    roll = Math.random! * 8
+    roll = between 0, 7
     child = new Path this
-    i = Math.floor Math.random! * @points.length
+    i = between 0, @points.length - 1
     # first point cannot be moved or deleted but curve can be adjusted
     if roll < 1 && @points.length < 10
       child.points.splice i, 0, @clamp @points[i].mutate scale
@@ -418,7 +413,6 @@ breed = !->
   mutate!
   crossover!
   # show the best
-  # paintings.sort (a, b) -> (a.score - b.score) || (a.shapes.length - b.shapes.length)
   if showIndex != lastShownIndex || paintings[showIndex] != previousPaintings[showIndex]
     lastShownIndex = showIndex
     (document.getElementById 'best-large').src = 'data:image/svg+xml;utf8,' + paintings[showIndex].svg!
@@ -597,7 +591,7 @@ window.addEventListener 'load', ->
     imageSelect.selectedIndex = 0
     imageText.value = sessionStorage.getItem 'url'
   else
-    imageSelect.selectedIndex = 1 + Math.floor Math.random! * imageSelect.options.length - 1
+    imageSelect.selectedIndex = between 1, imageSelect.options.length - 1
     imageText.value = 'images/' + imageSelect.value
 
   img.crossOrigin = ''
