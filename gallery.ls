@@ -17,6 +17,7 @@
 
 imgs =
   'MonaLisaFace.jpg',
+  'GrandCanyon.jpg',
   'MonaLisa.jpg',
   'StarryNight.jpg',
   'Lenna.jpg',
