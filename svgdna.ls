@@ -258,8 +258,14 @@ class Painting
       "</desc>" +
       "<defs>" +
         [shape.svgGradient i for shape, i in @shapes].join('') +
+        # should be clipped to viewbox but webkit doesn't in some circumstances; plus this allows for some creativity
+        "<clipPath id='clip'>" +
+          "<path d='M0,0L100,0L100,100,L0,100Z'/>" +
+        "</clipPath>" +
       "</defs>" +
-      [shape.svgPath i for shape, i in @shapes].join('') +
+      "<g clip-path='url(\#clip)'>" +
+        [shape.svgPath i for shape, i in @shapes].join('') +
+      "</g>" +
     "</svg>"
 
 class Shape
