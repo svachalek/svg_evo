@@ -1,5 +1,5 @@
 var imgs, imgIndex, box, source, painting, timeoutImage, timeoutOpacity, scaleImages, nextImage, transitionOpacity;
-imgs = ['MonaLisaFace.jpg', 'MonaLisa.jpg', 'StarryNight.jpg', 'Lenna.jpg', 'Flowers.jpg'];
+imgs = ['MonaLisaFace.jpg', 'GrandCanyon.jpg', 'MonaLisa.jpg', 'StarryNight.jpg', 'Lenna.jpg', 'Flowers.jpg'];
 imgIndex = -1;
 box = null;
 source = null;
