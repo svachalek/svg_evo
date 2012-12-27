@@ -1,4 +1,4 @@
-var storageKey, svgId, showIndex, lastShownIndex, paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, shapeSize, alphaMax, alphaMin, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, lowWeightedRandom, highWeightedRandom, randomX, randomY, randomByte, randomPainting, randomSign, clamp, between, plusOrMinus, format, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, mutate, crossover, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
+var storageKey, svgId, showIndex, lastShownIndex, paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, shapeSize, alphaMax, alphaMin, scaleMax, scaleMin, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, format, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, mutate, crossover, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
 storageKey = null;
 svgId = 0;
 showIndex = 0;
@@ -8,11 +8,13 @@ paintingWidth = paintingBaseSize;
 paintingHeight = paintingBaseSize;
 paintingMaxShapes = 100;
 shapeSize = 20;
-alphaMax = 0.6;
-alphaMin = 0.3;
+alphaMax = 60;
+alphaMin = 30;
+scaleMax = Math.round(paintingBaseSize / (shapeSize * 2) * 100);
+scaleMin = Math.round(1 / (shapeSize * 2) * 100);
 generationKeep = 4;
 generationMutate = 15;
-generationCross = 4;
+generationCross = 1;
 generationSize = function(){
   return generationKeep + generationMutate + generationCross;
 };
@@ -30,23 +32,17 @@ attempt = function(type, success){
     return successes[type] = (successes[type] || 0) + 1;
   }
 };
-lowWeightedRandom = function(){
-  return Math.cos(Math.random() * Math.PI / 2);
+between = function(min, max){
+  return Math.floor(Math.random() * (max - min + 1) + min);
 };
-highWeightedRandom = function(){
-  return Math.sin(Math.random() * Math.PI / 2);
-};
-randomX = function(){
-  return Math.floor(Math.random() * paintingWidth);
-};
-randomY = function(){
-  return Math.floor(Math.random() * paintingHeight);
+betweenHigh = function(min, max){
+  return Math.floor(Math.sin(Math.random() * Math.PI / 2) * (max - min + 1) + min);
 };
 randomByte = function(){
-  return Math.floor(Math.random() * 256);
+  return between(0, 255);
 };
 randomPainting = function(){
-  return Math.floor(Math.random() * paintings.length);
+  return between(0, paintings.length - 1);
 };
 randomSign = function(){
   if (Math.random() < 0.5) {
@@ -63,9 +59,6 @@ clamp = function(min, n, max){
   } else {
     return n;
   }
-};
-between = function(min, max){
-  return Math.random() * (max - min) + min;
 };
 plusOrMinus = function(min, max){
   return randomSign() * between(max, min);
@@ -99,13 +92,10 @@ diffPoint = function(d, x1, y1, x2, y2){
   return Math.sqrt((dr * dr + dg * dg + db * db) / (3 * 255 * 255));
 };
 stringifier = function(key, val){
-  if (typeof val === 'object') {
+  if (val && typeof val === 'object') {
     val._ = val.constructor.name;
   }
-  if (typeof val === 'number') {
-    return Math.round(val * 1000) / 1000;
-  }
-  if (key === 'diffMap') {
+  if (key === 'diffMap' || key === 'canvas') {
     return void 8;
   }
   return val;
@@ -128,14 +118,14 @@ Point = (function(){
     }
   }
   prototype.randomize = function(){
-    this.x = randomX();
-    this.y = randomY();
+    this.x = between(1, paintingWidth);
+    this.y = between(1, paintingHeight);
     return this;
   };
   prototype.mutate = function(scale){
     var r, a, dx, dy;
     r = between(1, clamp(5, shapeSize / scale, 50));
-    a = Math.random() * Math.PI * 2;
+    a = between(1, 360);
     dx = r * Math.cos(a);
     dy = r * Math.sin(a);
     return new Point(Math.round(this.x + dx), Math.round(this.y + dy));
@@ -165,27 +155,30 @@ Color = (function(){
     return this;
   };
   prototype.fillStyle = function(){
-    return 'rgba(' + this.r + ',' + this.g + ',' + this.b + ',' + this.a + ')';
+    return 'rgba(' + this.r + ',' + this.g + ',' + this.b + ',' + this.a / 100 + ')';
   };
   prototype.svg = function(){
     var rgb;
     rgb = '00000' + (this.b | this.g << 8 | this.r << 16).toString(16);
-    return "stop-color='#" + rgb.substr(rgb.length - 6, 6) + "' stop-opacity='" + format(this.a) + "'";
+    return "stop-color='#" + rgb.substr(rgb.length - 6, 6) + "' stop-opacity='" + format(this.a / 100) + "'";
   };
   prototype.mutate = function(scale){
-    var min, max, child, roll;
-    min = clamp(4, 32 / scale, 64);
+    var min, max, child;
+    min = clamp(4, Math.round(32 / scale), 64);
     max = 2 * min;
     child = new Color(this.r, this.g, this.b, this.a);
-    roll = Math.random();
-    if (roll < 0.25) {
+    switch (between(1, 4)) {
+    case 1:
       child.r = Math.round(clamp(0, this.r + plusOrMinus(min, max), 255));
-    } else if (roll < 0.50) {
+      break;
+    case 2:
       child.g = Math.round(clamp(0, this.g + plusOrMinus(min, max), 255));
-    } else if (roll < 0.75) {
+      break;
+    case 3:
       child.b = Math.round(clamp(0, this.b + plusOrMinus(min, max), 255));
-    } else {
-      min = clamp(0.01, 0.05 / scale, 0.10);
+      break;
+    case 4:
+      min = clamp(1, Math.round(5 / scale), 10);
       max = 2 * min;
       child.a = clamp(alphaMin, this.a + plusOrMinus(min, max), alphaMax);
     }
@@ -224,6 +217,9 @@ Painting = (function(){
     }
     for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
       shape = ref$[i$];
+      if (!shape) {
+        console.log(this);
+      }
       shape.paint(ctx);
     }
     ctx.restore();
@@ -231,11 +227,12 @@ Painting = (function(){
   prototype.show = function(box){
     var canvas, label;
     canvas = box.children[0];
-    this.paint(canvas, 1, true);
-    if (!this.score) {
+    if (this.canvas !== canvas) {
+      this.paint(canvas, 1, true);
       this.diffScore(canvas);
+      this.canvas = canvas;
     }
-    label = Math.floor(this.score) + (this.age ? ' +' + this.age : '');
+    label = 'Score: ' + Math.floor(this.score) + (this.age ? ' Age: ' + this.age : '');
     return setText(box.children[1], label);
   };
   prototype.diffScore = function(canvas){
@@ -260,6 +257,10 @@ Painting = (function(){
   };
   prototype.paintDiffMap = function(canvas){
     var ctx, diffData, data, i, i$, ref$, len$, point, color;
+    if (!this.diffMap) {
+      this.paint(canvas);
+      this.diffScore(canvas);
+    }
     canvas.width = paintingWidth;
     canvas.height = paintingHeight;
     ctx = canvas.getContext('2d');
@@ -279,22 +280,22 @@ Painting = (function(){
   prototype.mutate = function(){
     var child, roll, i, tmp;
     child = new Painting(this.shapes);
-    roll = Math.random();
-    if (roll < 0.01 && this.shapes.length >= 1) {
+    roll = between(0, 99);
+    if (roll < 1 && this.shapes.length >= 1) {
       child.origin = 'remove';
-      i = Math.floor * this.shapes.length;
+      i = betweenHigh(0, this.shapes.length - 1);
       child.shapes.splice(i, 1);
-    } else if (roll < 0.02 && this.shapes.length < paintingMaxShapes) {
+    } else if (roll < 2 && this.shapes.length < paintingMaxShapes) {
       child.origin = 'add';
       child.shapes.push(new Shape());
-    } else if (roll < 0.05 && this.shapes.length >= 2) {
+    } else if (roll < 5 && this.shapes.length >= 2) {
       child.origin = 'order';
-      i = Math.floor(highWeightedRandom() * (this.shapes.length - 1));
+      i = betweenHigh(0, this.shapes.length - 2);
       tmp = this.shapes[i];
       child.shapes[i] = this.shapes[i + 1];
       child.shapes[i + 1] = tmp;
     } else {
-      i = Math.floor(highWeightedRandom() * this.shapes.length);
+      i = betweenHigh(0, this.shapes.length - 1);
       child.shapes[i] = this.shapes[i].mutate();
       child.origin = child.shapes[i].origin;
     }
@@ -302,14 +303,16 @@ Painting = (function(){
   };
   prototype.cross = function(other){
     var i, j, shapes;
-    i = Math.round(between(1, this.shapes.length - 2));
-    j = Math.round(between(i + 1, this.shapes.length - 1));
+    i = between(Math.round(this.shapes.length / 4), this.shapes.length);
+    j = i + between(Math.round(this.shapes.length / 4), this.shapes.length / 3 / 4);
     shapes = this.shapes.slice(0, i).concat(other.shapes.slice(i, j)).concat(this.shapes.slice(j));
     return new Painting(shapes, 'cross');
   };
   prototype.svg = function(){
-    var i, shape;
-    return "<svg xmlns='http://www.w3.org/2000/svg' width='" + paintingWidth * 10 + "px' height='" + paintingHeight * 10 + "px' " + "viewBox='0 0 " + paintingWidth + " " + paintingHeight + "'>" + "<title>" + "Generated by SVGDNA at http://svachalek.github.com/svgdna" + "</title>" + "<desc>" + "Original image: " + storageKey + "</desc>" + "<defs>" + (function(){
+    var w, h, i, shape;
+    w = paintingWidth;
+    h = paintingHeight;
+    return "<svg xmlns='http://www.w3.org/2000/svg' width='" + w * 10 + "px' height='" + h * 10 + "px' " + "viewBox='0 0 " + w + " " + paintingHeight + "'>" + "<title>" + "Generated by SVGDNA at http://svachalek.github.com/svgdna" + "</title>" + "<desc>" + "Original image: " + storageKey + "</desc>" + "<defs>" + (function(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
         i = i$;
@@ -317,7 +320,7 @@ Painting = (function(){
         results$.push(shape.svgGradient(i));
       }
       return results$;
-    }.call(this)).join('') + "</defs>" + (function(){
+    }.call(this)).join('') + "<clipPath id='clip'>" + "<path d='M0,0L" + w + ",0L" + w + "," + h + "L0, " + h + "Z'/>" + "</clipPath>" + "</defs>" + "<g clip-path='url(#clip)'>" + (function(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
         i = i$;
@@ -325,7 +328,7 @@ Painting = (function(){
         results$.push(shape.svgPath(i));
       }
       return results$;
-    }.call(this)).join('') + "</svg>";
+    }.call(this)).join('') + "</g>" + "</svg>";
   };
   return Painting;
 }());
@@ -344,9 +347,9 @@ Shape = (function(){
     }
   }
   prototype.randomize = function(){
-    this.sx = (Math.random() + 0.2) / 2;
-    this.sy = (Math.random() + 0.2) / 2;
-    this.rotate = Math.random() * 2 * Math.PI;
+    this.sx = clamp(scaleMin, between(20, 50), scaleMax);
+    this.sy = clamp(scaleMin, between(20, 50), scaleMax);
+    this.rotate = between(1, 360);
     this.p = new Point();
     this.color1 = new Color();
     this.color2 = new Color();
@@ -360,8 +363,8 @@ Shape = (function(){
     gradient.addColorStop(1, this.color2.fillStyle());
     ctx.fillStyle = gradient;
     ctx.translate(this.p.x, this.p.y);
-    ctx.rotate(this.rotate);
-    ctx.scale(this.sx, this.sy);
+    ctx.rotate(this.rotate * Math.PI / 180);
+    ctx.scale(this.sx / 100, this.sy / 100);
     ctx.beginPath();
     this.path.paint(ctx);
     ctx.closePath();
@@ -370,20 +373,20 @@ Shape = (function(){
   };
   prototype.mutate = function(){
     var roll, scale, child;
-    roll = Math.random() * 13;
-    scale = this.sx * this.sy;
+    roll = between(0, 13);
+    scale = this.sx * this.sy / 10000;
     child = new Shape(this);
     if (roll < 7) {
       child.path = this.path.mutate(scale);
       child.origin = 'shape';
     } else if (roll < 8) {
-      child.rotate += plusOrMinus(Math.PI / 32, Math.PI / 8) / scale;
+      child.rotate += plusOrMinus(5 / scale, 20 / scale);
       child.origin = 'orientation';
     } else if (roll < 9) {
-      child.sx = clamp(1 / (shapeSize * 2), this.sy + plusOrMinus(0.1, 0.5), paintingBaseSize / (shapeSize * 2));
+      child.sx = clamp(scaleMin, this.sx + plusOrMinus(scaleMin, scaleMax / 8), scaleMax);
       child.origin = 'size';
     } else if (roll < 10) {
-      child.sy = clamp(1 / (shapeSize * 2), this.sy + plusOrMinus(0.1, 0.5), paintingBaseSize / (shapeSize * 2));
+      child.sy = clamp(scaleMin, this.sy + plusOrMinus(scaleMin, scaleMax / 8), scaleMax);
       child.origin = 'size';
     } else if (roll < 11) {
       child.p = this.p.mutate(scale);
@@ -401,10 +404,9 @@ Shape = (function(){
     return "<linearGradient id='" + gradientId + "'>" + "<stop offset='0%' " + this.color1.svg() + "/>" + "<stop offset='100%' " + this.color2.svg() + "/>" + "</linearGradient>";
   };
   prototype.svgPath = function(gradientId){
-    var rotate, scale, transform;
-    rotate = format(this.rotate / Math.PI * 180);
-    scale = format(this.sx) + "," + format(this.sy);
-    transform = "translate(" + this.p.svg() + ") rotate(" + rotate + ") scale(" + scale + ")";
+    var scale, transform;
+    scale = format(this.sx / 100) + "," + format(this.sy / 100);
+    transform = "translate(" + this.p.svg() + ") rotate(" + this.rotate + ") scale(" + scale + ")";
     return "<path transform='" + transform + "' fill='url(#" + gradientId + ")' d='" + this.path.svg() + "'/>";
   };
   return Shape;
@@ -422,8 +424,8 @@ Path = (function(){
   }
   prototype.randomize = function(){
     var x, y, res$, i$, ref$, len$, point;
-    x = Math.floor((Math.random() - 0.5) * 2 * shapeSize);
-    y = Math.floor((Math.random() - 0.5) * 2 * shapeSize);
+    x = between(-shapeSize, +shapeSize);
+    y = between(-shapeSize, +shapeSize);
     this.points = [new Point(shapeSize, 0), new Point(x, y)];
     res$ = [];
     for (i$ = 0, len$ = (ref$ = this.points).length; i$ < len$; ++i$) {
@@ -443,15 +445,15 @@ Path = (function(){
   };
   prototype.clamp = function(point){
     var x, y;
-    x = Math.floor(clamp(-shapeSize, point.x, shapeSize));
-    y = Math.floor(clamp(-shapeSize, point.y, shapeSize));
+    x = clamp(-shapeSize, point.x, +shapeSize);
+    y = clamp(-shapeSize, point.y, +shapeSize);
     return new Point(x, y);
   };
   prototype.mutate = function(scale){
     var roll, child, i;
-    roll = Math.random() * 8;
+    roll = between(0, 7);
     child = new Path(this);
-    i = Math.floor(Math.random() * this.points.length);
+    i = between(0, this.points.length - 1);
     if (roll < 1 && this.points.length < 10) {
       child.points.splice(i, 0, this.clamp(this.points[i].mutate(scale)));
       child.controls.splice(i, 0, this.clamp(child.points[i].mutate(scale)));
@@ -538,15 +540,10 @@ breed = function(){
   previousPaintings = paintings.slice(0);
   mutate();
   crossover();
-  paintings.sort(function(a, b){
-    return a.score - b.score || a.shapes.length - b.shapes.length;
-  });
   if (showIndex !== lastShownIndex || paintings[showIndex] !== previousPaintings[showIndex]) {
     lastShownIndex = showIndex;
-    document.getElementById('best-large').src = 'data:image/svg+xml;utf8,' + paintings[showIndex].svg();
-    if (paintings[showIndex].diffMap) {
-      paintings[showIndex].paintDiffMap(document.getElementById('diff'));
-    }
+    document.getElementById('best-large').src = 'data:image/svg+xml;base64,' + btoa(paintings[showIndex].svg());
+    paintings[showIndex].paintDiffMap(document.getElementById('diff'));
   }
   best = paintings[0];
   for (i$ = 0, len$ = (ref$ = paintings).length; i$ < len$; ++i$) {
@@ -753,7 +750,7 @@ window.addEventListener('load', function(){
     imageSelect.selectedIndex = 0;
     imageText.value = sessionStorage.getItem('url');
   } else {
-    imageSelect.selectedIndex = 1 + Math.floor(Math.random() * imageSelect.options.length - 1);
+    imageSelect.selectedIndex = between(1, imageSelect.options.length - 1);
     imageText.value = 'images/' + imageSelect.value;
   }
   img.crossOrigin = '';
