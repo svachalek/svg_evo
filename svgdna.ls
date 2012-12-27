@@ -423,7 +423,8 @@ breed = !->
   # show the best
   if showIndex != lastShownIndex || paintings[showIndex] != previousPaintings[showIndex]
     lastShownIndex = showIndex
-    (document.getElementById 'best-large').src = 'data:image/svg+xml;utf8,' + paintings[showIndex].svg!
+    # the base64 encoding shouldn't be necessary but Firefox can't handle the image otherwise
+    (document.getElementById 'best-large').src = 'data:image/svg+xml;base64,' + btoa paintings[showIndex].svg!
     paintings[showIndex].paintDiffMap document.getElementById 'diff'
   best = paintings[0]
   for painting, i in paintings
