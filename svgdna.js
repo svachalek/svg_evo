@@ -320,7 +320,7 @@ Painting = (function(){
         results$.push(shape.svgGradient(i));
       }
       return results$;
-    }.call(this)).join('') + "<clipPath id='clip'>" + "<path d='M0,0L" + w + ",0L" + w + "," + h + "L0, " + h + "Z'/>" + "</clipPath>" + "</defs>" + "<g clip-path='url(#clip)'>" + (function(){
+    }.call(this)).join('') + "<clipPath id='clip'>" + "<path d='M-1,-1L" + (w + 1) + ",-1L" + (w + 1) + "," + (h + 1) + "L-1," + (h + 1) + "Z'/>" + "</clipPath>" + "</defs>" + "<g clip-path='url(#clip)'>" + (function(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
         i = i$;
