@@ -16,12 +16,31 @@
 # along with SVGDNA.  If not, see <http://www.gnu.org/licenses/>
 
 imgs =
-  'MonaLisaFace.jpg',
-  'GrandCanyon.jpg',
-  'MonaLisa.jpg',
-  'StarryNight.jpg',
-  'Lenna.jpg',
-  'Flowers.jpg',
+  {
+    o:   'images/MonaLisaFace.jpg',
+    svg: 'MonaLisaFace.svg'
+  },{
+    o:   'https://lh3.googleusercontent.com/-VqbjDm2twT4/SxBj8kbEugI/AAAAAAAABWA/nmnZw0hFaF0/s572/Picture+006.jpg',
+    svg: 'HalfMoonBay-25k.svg'
+  },{
+    o:   'https://lh4.googleusercontent.com/-q-R5clDIXIg/S1fefky5yRI/AAAAAAAAIYc/yeYl_tYXQwM/s571/IMG_2564.JPG',
+    svg: 'OrangeButterflyFish-23k.svg'
+  },{
+    o:   'images/GrandCanyon.jpg',
+    svg: 'GrandCanyon.svg'
+  },{
+    o:   'images/MonaLisa.jpg',
+    svg: 'MonaLisa.svg'
+  },{
+    o:   'images/StarryNight.jpg',
+    svg: 'StarryNight.svg'
+  },{
+    o:   'images/Lenna.jpg',
+    svg: 'Lenna.svg'
+  },{
+    o:   'images/Flowers.jpg',
+    svg: 'Flowers.svg'
+  }
 
 imgIndex = -1
 box = null
@@ -36,20 +55,17 @@ scaleImages = !->
   bh = box.clientHeight - 2 * border
   nw = source.naturalWidth
   nh = source.naturalHeight
-  if bw / nw > bh / nh
-    w = nw * bh / nh
-    h = nh * bh / nh
-  else
-    w = nw * bw / nw
-    h = nh * bw / nw
+  ratio = Math.min bh/nh, bw/nw
+  w = Math.ceil nw * ratio
+  h = Math.ceil nh * ratio
   painting.style.width = source.style.width = w + 'px'
   painting.style.height = source.style.height = h + 'px'
-  painting.style.left = source.style.left = (bw - w) / 2 + 'px'
-  painting.style.top = source.style.top = (bh - h) / 2 + 'px'
+  painting.style.left = source.style.left = (Math.floor (bw - w) / 2) + 'px'
+  painting.style.top = source.style.top = (Math.floor (bh - h) / 2) + 'px'
 
 nextImage = !->
   imgIndex := (imgIndex + 1) % imgs.length
-  source.src = 'images/' + imgs[imgIndex]
+  source.src = imgs[imgIndex].o
 
 transitionOpacity = !->
   opacity = Math.round(painting.style.opacity * 100) + 10
@@ -68,7 +84,7 @@ window.addEventListener 'load', !->
     scaleImages!
     source.style.opacity = 1
     painting.style.opacity = 0
-    painting.src = source.src.replace /jpg|png/, 'svg'
+    painting.src = 'samples/' + imgs[imgIndex].svg
   painting.addEventListener 'load', !->
     timeoutOpacity := setTimeout transitionOpacity, 1000
   painting.addEventListener 'click', !->
