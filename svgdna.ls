@@ -262,7 +262,7 @@ class Painting
         [shape.svgGradient i for shape, i in @shapes].join('') +
         # should be clipped to viewbox but webkit doesn't in some circumstances; plus this allows for some creativity
         "<clipPath id='clip'>" +
-          "<path d='M0,0L" + w + ",0L" + w + "," + h + "L0, " + h + "Z'/>" +
+          "<path d='M-1,-1L" + (w+1) + ",-1L" + (w+1) + "," + (h+1) + "L-1," + (h+1) + "Z'/>" +
         "</clipPath>" +
       "</defs>" +
       "<g clip-path='url(\#clip)'>" +
