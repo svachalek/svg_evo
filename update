@@ -1,6 +1,7 @@
 cp ../*.html .
 cp ../*.css .
 cp ../images/* images
+cp ../samples/* samples
 cp ../textures/* textures
 cp ../*.js .
 
