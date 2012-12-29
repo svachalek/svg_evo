@@ -153,8 +153,6 @@ class Color
         min = clamp 1, (Math.round 5 / scale), 10
         max = 2 * min
         child.a = clamp alphaMin, @a + plusOrMinus(min, max), alphaMax
-        if isNaN child.a
-          console.log this
     return child
 
 class Painting
@@ -178,8 +176,6 @@ class Painting
     else
       ctx.clearRect 0, 0, paintingWidth, paintingHeight
     for shape in @shapes
-      unless shape
-        console.log this
       shape.paint ctx
     ctx.restore!
 
@@ -299,7 +295,6 @@ class Shape
   paint: !(ctx) ->
     ctx.save!
     gradient = ctx.createLinearGradient xMin, 0, xMax, 0
-    console.log @color1.fillStyle!, @color2.fillStyle!
     gradient.addColorStop 0, @color1.fillStyle!
     gradient.addColorStop 1, @color2.fillStyle!
     ctx.fillStyle = gradient
