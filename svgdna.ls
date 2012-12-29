@@ -25,11 +25,19 @@ paintingWidth = paintingBaseSize
 paintingHeight = paintingBaseSize
 paintingMaxShapes = 100
 
-shapeSize = 20
-alphaMax = 60
 alphaMin = 30
-scaleMax = Math.round paintingBaseSize/(shapeSize*2) * 100
-scaleMin = Math.round 1/(shapeSize*2) * 100
+alphaMax = 60
+
+# these are on scaled path coordinates
+xMin = yMin = -50
+xMax = yMax = +50
+xMid = yMid = (xMin + xMax) / 2
+
+shapeSize = 10
+xRange = xMax - xMin
+scaleMax = Math.round 100 * paintingBaseSize / xRange # shape is paintingBaseSize pixels
+scaleMin = Math.round 100 * 1 / xRange                # shape is 1 pixel
+scaleMid = Math.round 100 * shapeSize / xRange        # shape is shapeSize pixels
 
 generationKeep = 4
 generationMutate = 15
@@ -105,7 +113,7 @@ class Point
     return this
 
   mutate: (scale) ->
-    r = between 1, clamp(5, shapeSize / scale, 50)
+    r = between 1, clamp(1, shapeSize / scale, 50)
     a = between 1, 360
     dx = r * Math.cos a
     dy = r * Math.sin a
@@ -131,7 +139,7 @@ class Color
     "stop-color='#" + rgb.substr(rgb.length - 6, 6) + "' stop-opacity='" + format(@a / 100) + "'"
 
   mutate: (scale)  ->
-    min = clamp 4, (Math.round 32 / scale), 64
+    min = clamp 8, (Math.round 16 / scale), 64
     max = 2 * min
     child = new Color @r, @g, @b, @a
     switch between 1, 4
@@ -145,6 +153,8 @@ class Color
         min = clamp 1, (Math.round 5 / scale), 10
         max = 2 * min
         child.a = clamp alphaMin, @a + plusOrMinus(min, max), alphaMax
+        if isNaN child.a
+          console.log this
     return child
 
 class Painting
@@ -279,8 +289,7 @@ class Shape
       @randomize!
 
   randomize: !->
-    @sx = clamp scaleMin, (between 20, 50), scaleMax
-    @sy = clamp scaleMin, (between 20, 50), scaleMax
+    @sx = @sy = scaleMid
     @rotate = between 1, 360
     @p = new Point!
     @color1 = new Color!
@@ -289,7 +298,8 @@ class Shape
 
   paint: !(ctx) ->
     ctx.save!
-    gradient = ctx.createLinearGradient -shapeSize, 0, shapeSize, 0
+    gradient = ctx.createLinearGradient xMin, 0, xMax, 0
+    console.log @color1.fillStyle!, @color2.fillStyle!
     gradient.addColorStop 0, @color1.fillStyle!
     gradient.addColorStop 1, @color2.fillStyle!
     ctx.fillStyle = gradient
@@ -349,26 +359,27 @@ class Path
     else @randomize!
 
   randomize: !->
-    x = between -shapeSize, +shapeSize
-    y = between -shapeSize, +shapeSize
-    @points = [(new Point shapeSize, 0), (new Point x, y)]
+    x = between xMin, xMax
+    y = between yMin, yMax
+    # first point is implicit (xMin, yMid)
+    @points = [(new Point xMax, yMid), (new Point x, y)]
     @controls = [point.mutate 1 for point in @points]
 
   paint: !(ctx) ->
-    ctx.moveTo -shapeSize, 0
+    ctx.moveTo xMin, yMid
     for point, i in @points
       ctx.quadraticCurveTo point.x, point.y, @controls[i].x, @controls[i].y
 
   clamp: (point) ->
-    x = clamp -shapeSize, point.x, +shapeSize
-    y = clamp -shapeSize, point.y, +shapeSize
+    x = clamp xMin, point.x, xMax
+    y = clamp yMin, point.y, yMax
     new Point x, y
 
   mutate: (scale) ->
     roll = between 0, 7
     child = new Path this
     i = between 0, @points.length - 1
-    # first point cannot be moved or deleted but curve can be adjusted
+    # points[0] cannot be moved or deleted but curve can be adjusted
     if roll < 1 && @points.length < 10
       child.points.splice i, 0, @clamp @points[i].mutate scale
       child.controls.splice i, 0, @clamp child.points[i].mutate scale
@@ -381,7 +392,7 @@ class Path
       child.controls[i] = @clamp child.controls[i].mutate scale
     return child
 
-  svg: -> "M" + (-shapeSize) + ",0" + [("Q" + point.svg! + ' ' + @controls[i].svg!) for point, i in @points].join('')
+  svg: -> 'M' + xMin + ',' + yMid + [("Q" + point.svg! + ' ' + @controls[i].svg!) for point, i in @points].join('')
 
 targetData = null
 bestData = null
