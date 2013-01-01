@@ -54,10 +54,11 @@ crossBoxes = []
 attempts = {}
 successes = {}
 
-attempt = (type, success) ->
-  attempts[type] = (attempts[type] || 0) + 1
-  if success
-    successes[type] = (successes[type] || 0) + 1
+attempt = (types, success) ->
+  for type in types
+    attempts[type] = (attempts[type] || 0) + 1
+    if success
+      successes[type] = (successes[type] || 0) + 1
 
 between = (min, max) -> Math.floor (Math.random! * (max - min + 1) + min)
 betweenHigh = (min, max) -> Math.floor (Math.sin(Math.random! * Math.PI / 2) * (max - min + 1) + min)
@@ -156,11 +157,11 @@ class Color
     return child
 
 class Painting
-  (shapes, @origin) -> if shapes then @shapes = shapes.slice(0) else @randomize!
+  (shapes, @origin = []) -> if shapes then @shapes = shapes.slice(0) else @randomize!
 
   randomize: ->
     @shapes = [new Shape!]
-    @origin = 'random'
+    @origin = ['random']
     return this
 
   paint: !(canvas, scale, opaque) ->
@@ -229,14 +230,14 @@ class Painting
     child = new Painting @shapes
     roll = between 0, 99
     if roll < 1 && @shapes.length > 1
-      child.origin = 'remove'
+      child.origin.push 'remove'
       i = betweenHigh 0, @shapes.length - 1
       child.shapes.splice(i, 1)
     else if roll < 2 && @shapes.length < paintingMaxShapes
-      child.origin = 'add'
+      child.origin.push 'add'
       child.shapes.push new Shape!
     else if roll < 5 && @shapes.length >= 2
-      child.origin = 'order'
+      child.origin.push 'order'
       i = betweenHigh 0, @shapes.length - 2 # not the last
       tmp = @shapes[i]
       child.shapes[i] = @shapes[i + 1]
@@ -244,14 +245,14 @@ class Painting
     else
       i = betweenHigh 0, @shapes.length - 1
       child.shapes[i] = @shapes[i].mutate!
-      child.origin = child.shapes[i].origin
+      child.origin.push child.shapes[i].origin
     return child
 
   cross: (other) ->
     i = between (Math.round @shapes.length / 4), @shapes.length
     j = i + between (Math.round @shapes.length / 4), @shapes.length / 3/4
     shapes = (@shapes.slice 0, i).concat(other.shapes.slice i, j).concat(@shapes.slice(j))
-    new Painting shapes, 'cross'
+    new Painting shapes, ['cross']
 
   svg: ->
     w = paintingWidth
@@ -393,10 +394,13 @@ targetData = null
 bestData = null
 
 mutate = !->
+  mutationRate = clamp 1, 5 - (Math.floor (Math.log generationNumber) / Math.LN10), 5
   for i in [0 to generationMutate - 1]
     n = randomPainting!
-    mom = paintings[n]
-    child = mom.mutate!
+    child = mom = paintings[n]
+    j = 0
+    while j++ < mutationRate
+      child = child.mutate!
     child.show mutantBoxes[i]
     if child.score < mom.score
       paintings[n] = child
@@ -416,9 +420,9 @@ crossover = !->
     child.show crossBoxes[i]
     if child.score < mom.score && child.score < dad.score
       paintings[if mom.score < dad.score then d else m] = child
-      attempt 'cross', true
+      attempt child.origin, true
     else
-      attempt 'cross', false
+      attempt child.origin, false
 
 breed = !->
   startTime = Date.now!
