@@ -277,6 +277,8 @@ class Painting
       "</g>" +
     "</svg>"
 
+  cost: -> [shape.cost! for shape in @shapes].reduce (a, b) -> a + b
+
 class Shape
   (source) ->
     if source
@@ -346,6 +348,8 @@ class Shape
     transform = "translate(" + @p.svg! + ") rotate(" + @rotate + ") scale(" + scale + ")"
     "<path transform='" + transform + "' fill='url(#" + gradientId + ")' d='" + @path.svg! + "'/>"
 
+  cost: -> @path.cost!
+
 class Path
 
   (source) ->
@@ -389,6 +393,8 @@ class Path
     return child
 
   svg: -> 'M' + xMin + ',' + yMid + [("Q" + point.svg! + ' ' + @controls[i].svg!) for point, i in @points].join('')
+
+  cost: -> @points.length
 
 targetData = null
 bestData = null
