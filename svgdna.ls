@@ -228,7 +228,7 @@ class Painting
   mutate: ->
     child = new Painting @shapes
     roll = between 0, 99
-    if roll < 1 && @shapes.length >= 1
+    if roll < 1 && @shapes.length > 1
       child.origin = 'remove'
       i = betweenHigh 0, @shapes.length - 1
       child.shapes.splice(i, 1)
