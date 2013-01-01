@@ -1,4 +1,4 @@
-var storageKey, svgId, showIndex, lastShownIndex, paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, shapeSize, alphaMax, alphaMin, scaleMax, scaleMin, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, format, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, mutate, crossover, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
+var storageKey, svgId, showIndex, lastShownIndex, paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, alphaMin, alphaMax, xMin, yMin, xMax, yMax, xMid, yMid, shapeSize, xRange, scaleMax, scaleMin, scaleMid, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, format, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, mutate, crossover, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
 storageKey = null;
 svgId = 0;
 showIndex = 0;
@@ -7,11 +7,16 @@ paintingBaseSize = 100;
 paintingWidth = paintingBaseSize;
 paintingHeight = paintingBaseSize;
 paintingMaxShapes = 100;
-shapeSize = 20;
-alphaMax = 60;
 alphaMin = 30;
-scaleMax = Math.round(paintingBaseSize / (shapeSize * 2) * 100);
-scaleMin = Math.round(1 / (shapeSize * 2) * 100);
+alphaMax = 60;
+xMin = yMin = -50;
+xMax = yMax = +50;
+xMid = yMid = (xMin + xMax) / 2;
+shapeSize = 10;
+xRange = xMax - xMin;
+scaleMax = Math.round(100 * paintingBaseSize / xRange);
+scaleMin = Math.round(100 * 1 / xRange);
+scaleMid = Math.round(100 * shapeSize / xRange);
 generationKeep = 4;
 generationMutate = 15;
 generationCross = 1;
@@ -26,11 +31,16 @@ mutantBoxes = [];
 crossBoxes = [];
 attempts = {};
 successes = {};
-attempt = function(type, success){
-  attempts[type] = (attempts[type] || 0) + 1;
-  if (success) {
-    return successes[type] = (successes[type] || 0) + 1;
+attempt = function(types, success){
+  var i$, len$, type, results$ = [];
+  for (i$ = 0, len$ = types.length; i$ < len$; ++i$) {
+    type = types[i$];
+    attempts[type] = (attempts[type] || 0) + 1;
+    if (success) {
+      results$.push(successes[type] = (successes[type] || 0) + 1);
+    }
   }
+  return results$;
 };
 between = function(min, max){
   return Math.floor(Math.random() * (max - min + 1) + min);
@@ -124,7 +134,7 @@ Point = (function(){
   };
   prototype.mutate = function(scale){
     var r, a, dx, dy;
-    r = between(1, clamp(5, shapeSize / scale, 50));
+    r = between(1, clamp(1, shapeSize / scale, 50));
     a = between(1, 360);
     dx = r * Math.cos(a);
     dy = r * Math.sin(a);
@@ -164,7 +174,7 @@ Color = (function(){
   };
   prototype.mutate = function(scale){
     var min, max, child;
-    min = clamp(4, Math.round(32 / scale), 64);
+    min = clamp(8, Math.round(16 / scale), 64);
     max = 2 * min;
     child = new Color(this.r, this.g, this.b, this.a);
     switch (between(1, 4)) {
@@ -190,7 +200,9 @@ Painting = (function(){
   Painting.displayName = 'Painting';
   var prototype = Painting.prototype, constructor = Painting;
   function Painting(shapes, origin){
-    this.origin = origin;
+    this.origin = origin != null
+      ? origin
+      : [];
     if (shapes) {
       this.shapes = shapes.slice(0);
     } else {
@@ -199,7 +211,7 @@ Painting = (function(){
   }
   prototype.randomize = function(){
     this.shapes = [new Shape()];
-    this.origin = 'random';
+    this.origin = ['random'];
     return this;
   };
   prototype.paint = function(canvas, scale, opaque){
@@ -217,9 +229,6 @@ Painting = (function(){
     }
     for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
       shape = ref$[i$];
-      if (!shape) {
-        console.log(this);
-      }
       shape.paint(ctx);
     }
     ctx.restore();
@@ -281,15 +290,15 @@ Painting = (function(){
     var child, roll, i, tmp;
     child = new Painting(this.shapes);
     roll = between(0, 99);
-    if (roll < 1 && this.shapes.length >= 1) {
-      child.origin = 'remove';
+    if (roll < 1 && this.shapes.length > 1) {
+      child.origin.push('remove');
       i = betweenHigh(0, this.shapes.length - 1);
       child.shapes.splice(i, 1);
     } else if (roll < 2 && this.shapes.length < paintingMaxShapes) {
-      child.origin = 'add';
+      child.origin.push('add');
       child.shapes.push(new Shape());
     } else if (roll < 5 && this.shapes.length >= 2) {
-      child.origin = 'order';
+      child.origin.push('order');
       i = betweenHigh(0, this.shapes.length - 2);
       tmp = this.shapes[i];
       child.shapes[i] = this.shapes[i + 1];
@@ -297,7 +306,7 @@ Painting = (function(){
     } else {
       i = betweenHigh(0, this.shapes.length - 1);
       child.shapes[i] = this.shapes[i].mutate();
-      child.origin = child.shapes[i].origin;
+      child.origin.push(child.shapes[i].origin);
     }
     return child;
   };
@@ -306,7 +315,7 @@ Painting = (function(){
     i = between(Math.round(this.shapes.length / 4), this.shapes.length);
     j = i + between(Math.round(this.shapes.length / 4), this.shapes.length / 3 / 4);
     shapes = this.shapes.slice(0, i).concat(other.shapes.slice(i, j)).concat(this.shapes.slice(j));
-    return new Painting(shapes, 'cross');
+    return new Painting(shapes, ['cross']);
   };
   prototype.svg = function(){
     var w, h, i, shape;
@@ -347,8 +356,7 @@ Shape = (function(){
     }
   }
   prototype.randomize = function(){
-    this.sx = clamp(scaleMin, between(20, 50), scaleMax);
-    this.sy = clamp(scaleMin, between(20, 50), scaleMax);
+    this.sx = this.sy = scaleMid;
     this.rotate = between(1, 360);
     this.p = new Point();
     this.color1 = new Color();
@@ -358,7 +366,7 @@ Shape = (function(){
   prototype.paint = function(ctx){
     var gradient;
     ctx.save();
-    gradient = ctx.createLinearGradient(-shapeSize, 0, shapeSize, 0);
+    gradient = ctx.createLinearGradient(xMin, 0, xMax, 0);
     gradient.addColorStop(0, this.color1.fillStyle());
     gradient.addColorStop(1, this.color2.fillStyle());
     ctx.fillStyle = gradient;
@@ -424,9 +432,9 @@ Path = (function(){
   }
   prototype.randomize = function(){
     var x, y, res$, i$, ref$, len$, point;
-    x = between(-shapeSize, +shapeSize);
-    y = between(-shapeSize, +shapeSize);
-    this.points = [new Point(shapeSize, 0), new Point(x, y)];
+    x = between(xMin, xMax);
+    y = between(yMin, yMax);
+    this.points = [new Point(xMax, yMid), new Point(x, y)];
     res$ = [];
     for (i$ = 0, len$ = (ref$ = this.points).length; i$ < len$; ++i$) {
       point = ref$[i$];
@@ -436,7 +444,7 @@ Path = (function(){
   };
   prototype.paint = function(ctx){
     var i$, ref$, len$, i, point;
-    ctx.moveTo(-shapeSize, 0);
+    ctx.moveTo(xMin, yMid);
     for (i$ = 0, len$ = (ref$ = this.points).length; i$ < len$; ++i$) {
       i = i$;
       point = ref$[i$];
@@ -445,8 +453,8 @@ Path = (function(){
   };
   prototype.clamp = function(point){
     var x, y;
-    x = clamp(-shapeSize, point.x, +shapeSize);
-    y = clamp(-shapeSize, point.y, +shapeSize);
+    x = clamp(xMin, point.x, xMax);
+    y = clamp(yMin, point.y, yMax);
     return new Point(x, y);
   };
   prototype.mutate = function(scale){
@@ -469,7 +477,7 @@ Path = (function(){
   };
   prototype.svg = function(){
     var i, point;
-    return "M" + (-shapeSize) + ",0" + (function(){
+    return 'M' + xMin + ',' + yMid + (function(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = this.points).length; i$ < len$; ++i$) {
         i = i$;
@@ -484,12 +492,16 @@ Path = (function(){
 targetData = null;
 bestData = null;
 mutate = function(){
-  var i$, ref$, len$, i, n, mom, child;
+  var mutationRate, i$, ref$, len$, i, n, child, mom, j;
+  mutationRate = clamp(1, 5 - Math.floor(Math.log(generationNumber) / Math.LN10), 5);
   for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
     i = ref$[i$];
     n = randomPainting();
-    mom = paintings[n];
-    child = mom.mutate();
+    child = mom = paintings[n];
+    j = 0;
+    while (j++ < mutationRate) {
+      child = child.mutate();
+    }
     child.show(mutantBoxes[i]);
     if (child.score < mom.score) {
       paintings[n] = child;
@@ -521,9 +533,9 @@ crossover = function(){
     child.show(crossBoxes[i]);
     if (child.score < mom.score && child.score < dad.score) {
       paintings[mom.score < dad.score ? d : m] = child;
-      attempt('cross', true);
+      attempt(child.origin, true);
     } else {
-      attempt('cross', false);
+      attempt(child.origin, false);
     }
   }
   function fn$(){
