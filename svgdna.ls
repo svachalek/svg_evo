@@ -27,6 +27,7 @@ paintingMaxShapes = 100
 
 alphaMin = 30
 alphaMax = 60
+pointsMax = 10
 
 # these are on scaled path coordinates
 xMin = yMin = -50
@@ -380,7 +381,7 @@ class Path
     child = new Path this
     i = between 0, @points.length - 1
     # points[0] cannot be moved or deleted but curve can be adjusted
-    if roll < 1 && @points.length < 10
+    if roll < 1 && @points.length < pointsMax
       child.points.splice i, 0, @clamp @points[i].mutate scale
       child.controls.splice i, 0, @clamp child.points[i].mutate scale
     else if roll < 2 && i > 0
