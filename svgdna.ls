@@ -43,7 +43,6 @@ scaleMid = Math.round 100 * shapeSize / xRange        # shape is shapeSize pixel
 generationKeep = 4
 generationMutate = 15
 generationCross = 1
-generationSize = -> generationKeep + generationMutate + generationCross
 generationNumber = 0
 cumulativeTime = 0
 
