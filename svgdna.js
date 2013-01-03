@@ -1,4 +1,4 @@
-var storageKey, svgId, showIndex, lastShownIndex, paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, alphaMin, alphaMax, xMin, yMin, xMax, yMax, xMid, yMid, shapeSize, xRange, scaleMax, scaleMin, scaleMid, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, format, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, mutate, crossover, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
+var storageKey, svgId, showIndex, lastShownIndex, paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, alphaMin, alphaMax, pointsMax, xMin, yMin, xMax, yMax, xMid, yMid, shapeSize, xRange, scaleMax, scaleMin, scaleMid, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, format, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, mutate, crossover, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
 storageKey = null;
 svgId = 0;
 showIndex = 0;
@@ -9,6 +9,7 @@ paintingHeight = paintingBaseSize;
 paintingMaxShapes = 100;
 alphaMin = 30;
 alphaMax = 60;
+pointsMax = 10;
 xMin = yMin = -50;
 xMax = yMax = +50;
 xMid = yMid = (xMin + xMax) / 2;
@@ -339,6 +340,19 @@ Painting = (function(){
       return results$;
     }.call(this)).join('') + "</g>" + "</svg>";
   };
+  prototype.cost = function(){
+    var shape;
+    return (function(){
+      var i$, ref$, len$, results$ = [];
+      for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
+        shape = ref$[i$];
+        results$.push(shape.cost());
+      }
+      return results$;
+    }.call(this)).reduce(function(a, b){
+      return a + b;
+    });
+  };
   return Painting;
 }());
 Shape = (function(){
@@ -417,6 +431,9 @@ Shape = (function(){
     transform = "translate(" + this.p.svg() + ") rotate(" + this.rotate + ") scale(" + scale + ")";
     return "<path transform='" + transform + "' fill='url(#" + gradientId + ")' d='" + this.path.svg() + "'/>";
   };
+  prototype.cost = function(){
+    return this.path.cost();
+  };
   return Shape;
 }());
 Path = (function(){
@@ -462,7 +479,7 @@ Path = (function(){
     roll = between(0, 7);
     child = new Path(this);
     i = between(0, this.points.length - 1);
-    if (roll < 1 && this.points.length < 10) {
+    if (roll < 1 && this.points.length < pointsMax) {
       child.points.splice(i, 0, this.clamp(this.points[i].mutate(scale)));
       child.controls.splice(i, 0, this.clamp(child.points[i].mutate(scale)));
     } else if (roll < 2 && i > 0) {
@@ -486,6 +503,9 @@ Path = (function(){
       }
       return results$;
     }.call(this)).join('');
+  };
+  prototype.cost = function(){
+    return this.points.length;
   };
   return Path;
 }());
