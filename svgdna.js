@@ -1,4 +1,4 @@
-var storageKey, svgId, showIndex, lastShownIndex, paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, alphaMin, alphaMax, pointsMax, xMin, yMin, xMax, yMax, xMid, yMid, shapeSize, xRange, scaleMax, scaleMin, scaleMid, generationKeep, generationMutate, generationCross, generationSize, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, format, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, mutate, crossover, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
+var storageKey, svgId, showIndex, lastShownIndex, paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, alphaMin, alphaMax, pointsMin, pointsMax, xMin, yMin, xMax, yMax, xMid, yMid, shapeSize, xRange, scaleMax, scaleMin, scaleMid, generationKeep, generationMutate, generationCross, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, format, setText, diffRGB, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, mutate, crossover, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
 storageKey = null;
 svgId = 0;
 showIndex = 0;
@@ -9,7 +9,8 @@ paintingHeight = paintingBaseSize;
 paintingMaxShapes = 100;
 alphaMin = 30;
 alphaMax = 60;
-pointsMax = 10;
+pointsMin = 6;
+pointsMax = 16;
 xMin = yMin = -50;
 xMax = yMax = +50;
 xMid = yMid = (xMin + xMax) / 2;
@@ -21,9 +22,6 @@ scaleMid = Math.round(100 * shapeSize / xRange);
 generationKeep = 4;
 generationMutate = 15;
 generationCross = 1;
-generationSize = function(){
-  return generationKeep + generationMutate + generationCross;
-};
 generationNumber = 0;
 cumulativeTime = 0;
 paintings = [];
@@ -93,6 +91,9 @@ format = function(n){
 setText = function(element, text){
   return element.innerText = element.textContent = text;
 };
+diffRGB = function(dr, dg, db){
+  return Math.sqrt((dr * dr + dg * dg + db * db) / (3 * 255 * 255));
+};
 diffPoint = function(d, x1, y1, x2, y2){
   var b1, b2, dr, dg, db;
   b1 = (x1 + y1 * paintingWidth) * 4;
@@ -100,7 +101,7 @@ diffPoint = function(d, x1, y1, x2, y2){
   dr = d[b1++] - d[b2++];
   dg = d[b1++] - d[b2++];
   db = d[b1++] - d[b2++];
-  return Math.sqrt((dr * dr + dg * dg + db * db) / (3 * 255 * 255));
+  return diffRGB(dr, dg, db);
 };
 stringifier = function(key, val){
   if (val && typeof val === 'object') {
@@ -129,8 +130,8 @@ Point = (function(){
     }
   }
   prototype.randomize = function(){
-    this.x = between(1, paintingWidth);
-    this.y = between(1, paintingHeight);
+    this.x = between(xMin, xMax);
+    this.y = between(yMin, yMax);
     return this;
   };
   prototype.mutate = function(scale){
@@ -140,6 +141,9 @@ Point = (function(){
     dx = r * Math.cos(a);
     dy = r * Math.sin(a);
     return new Point(Math.round(this.x + dx), Math.round(this.y + dy));
+  };
+  prototype.angle = function(){
+    return (Math.atan2(this.y, this.x) + 2 * Math.PI) % (2 * Math.PI);
   };
   prototype.svg = function(){
     return this.x + ',' + this.y;
@@ -258,7 +262,7 @@ Painting = (function(){
       dg = data[i] - targetData[i++];
       db = data[i] - targetData[i++];
       i++;
-      diff = Math.sqrt((dr * dr + dg * dg + db * db) / (3 * 255 * 255));
+      diff = diffRGB(dr, dg, db);
       diffMap.push(diff);
       score += diff * weightMap[w++];
     }
@@ -372,7 +376,7 @@ Shape = (function(){
   prototype.randomize = function(){
     this.sx = this.sy = scaleMid;
     this.rotate = between(1, 360);
-    this.p = new Point();
+    this.p = new Point(between(1, paintingWidth), between(1, paintingHeight));
     this.color1 = new Color();
     this.color2 = new Color();
     this.path = new Path();
@@ -442,30 +446,32 @@ Path = (function(){
   function Path(source){
     if (source) {
       this.points = source.points.slice(0);
-      this.controls = source.controls.slice(0);
     } else {
       this.randomize();
     }
   }
   prototype.randomize = function(){
-    var x, y, res$, i$, ref$, len$, point;
-    x = between(xMin, xMax);
-    y = between(yMin, yMax);
-    this.points = [new Point(xMax, yMid), new Point(x, y)];
-    res$ = [];
-    for (i$ = 0, len$ = (ref$ = this.points).length; i$ < len$; ++i$) {
-      point = ref$[i$];
-      res$.push(point.mutate(1));
+    var p0, p1;
+    p0 = new Point(xMin, yMid);
+    p0.locked = true;
+    p1 = new Point(xMax, yMid);
+    p1.locked = true;
+    this.points = [p0, p1];
+    while (this.points.length < pointsMin) {
+      this.points.push(new Point());
     }
-    this.controls = res$;
+    this.sort();
   };
   prototype.paint = function(ctx){
-    var i$, ref$, len$, i, point;
-    ctx.moveTo(xMin, yMid);
-    for (i$ = 0, len$ = (ref$ = this.points).length; i$ < len$; ++i$) {
-      i = i$;
-      point = ref$[i$];
-      ctx.quadraticCurveTo(point.x, point.y, this.controls[i].x, this.controls[i].y);
+    var first, i, control, point;
+    first = this.points[0];
+    ctx.moveTo(first.x, first.y);
+    i = 1;
+    while (i <= this.points.length) {
+      control = this.points[i % this.points.length];
+      point = this.points[(i + 1) % this.points.length];
+      i += 2;
+      ctx.quadraticCurveTo(control.x, control.y, point.x, point.y);
     }
   };
   prototype.clamp = function(point){
@@ -474,35 +480,50 @@ Path = (function(){
     y = clamp(yMin, point.y, yMax);
     return new Point(x, y);
   };
+  prototype.sort = function(){
+    this.points.sort(function(a, b){
+      return a.angle() - b.angle();
+    });
+  };
+  prototype.randomPoint = function(){
+    var i;
+    i = between(0, this.points.length - 1);
+    while (this.points[i].locked) {
+      i = between(0, this.points.length - 1);
+    }
+    return i;
+  };
   prototype.mutate = function(scale){
-    var roll, child, i;
+    var roll, child, i, p;
     roll = between(0, 7);
     child = new Path(this);
-    i = between(0, this.points.length - 1);
-    if (roll < 1 && this.points.length < pointsMax) {
-      child.points.splice(i, 0, this.clamp(this.points[i].mutate(scale)));
-      child.controls.splice(i, 0, this.clamp(child.points[i].mutate(scale)));
-    } else if (roll < 2 && i > 0) {
-      child.points.splice(i, 1);
-      child.controls.splice(i, 1);
-    } else if (roll < 5 && i > 0) {
-      child.points[i] = this.clamp(this.points[i].mutate(scale));
-    } else {
-      child.controls[i] = this.clamp(child.controls[i].mutate(scale));
+    if (roll < 5) {
+      i = child.randomPoint();
+      child.points[i] = this.clamp(child.points[i].mutate(scale));
+      child.sort();
+    } else if (roll < 6 && this.points.length >= pointsMin + 2) {
+      child.points.splice(child.randomPoint(), 1);
+      child.points.splice(child.randomPoint(), 1);
+    } else if (this.points.length < pointsMax) {
+      p = new Point();
+      child.points.push(p);
+      child.points.push(this.clamp(p.mutate(scale)));
+      child.sort();
     }
     return child;
   };
   prototype.svg = function(){
-    var i, point;
-    return 'M' + xMin + ',' + yMid + (function(){
-      var i$, ref$, len$, results$ = [];
-      for (i$ = 0, len$ = (ref$ = this.points).length; i$ < len$; ++i$) {
-        i = i$;
-        point = ref$[i$];
-        results$.push("Q" + point.svg() + ' ' + this.controls[i].svg());
-      }
-      return results$;
-    }.call(this)).join('');
+    var first, svg, i, control, point;
+    first = this.points[0];
+    svg = 'M' + first.svg();
+    i = 1;
+    while (i <= this.points.length) {
+      control = this.points[i % this.points.length];
+      point = this.points[(i + 1) % this.points.length];
+      i += 2;
+      svg += 'Q' + control.svg() + ' ' + point.svg();
+    }
+    return svg;
   };
   prototype.cost = function(){
     return this.points.length;
