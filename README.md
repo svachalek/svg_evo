@@ -17,7 +17,6 @@ This project was inspired by Roger Alsing's [Evolution of Mona Lisa][2] project
 and follows a similar algorithm but has no code in common. Aside from the obvious
 platform difference, I have added:
 
-* gradients
 * curves
 * crossover
 * weighted evaluation based on color histogram and edge detection

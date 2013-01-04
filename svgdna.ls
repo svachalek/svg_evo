@@ -32,17 +32,6 @@ alphaMax = 60
 pointsMin = 6
 pointsMax = 20
 
-# these are on scaled path coordinates
-xMin = yMin = -50
-xMax = yMax = +50
-xMid = yMid = (xMin + xMax) / 2
-
-shapeSize = 10
-xRange = xMax - xMin
-scaleMax = Math.round 100 * paintingBaseSize / xRange # shape is paintingBaseSize pixels
-scaleMin = Math.round 100 * 1 / xRange                # shape is 1 pixel
-scaleMid = Math.round 100 * shapeSize / xRange        # shape is shapeSize pixels
-
 generationKeep = 4
 generationMutate = 15
 generationCross = 1
@@ -114,18 +103,16 @@ class Point
   (@x, @y) -> unless x? then @randomize!
 
   randomize: ->
-    @x = between xMin, xMax
-    @y = between yMin, yMax
+    @x = between 0, paintingWidth - 1
+    @y = between 0, paintingHeight - 1
     return this
 
-  mutate: (scale) ->
-    r = between 1, clamp(1, shapeSize / scale, 50)
-    a = between 1, 360
-    dx = r * Math.cos a
-    dy = r * Math.sin a
-    new Point (Math.round @x + dx), (Math.round @y + dy)
+  mutate: ->
+    dx = between -2, +2
+    dy = between -2, +2
+    new Point @x + dx, @y + dy
 
-  angle: -> ((Math.atan2 @y, @x) + 2 * Math.PI) % (2 * Math.PI)
+  angle: (p) -> ((Math.atan2 @y - p.y, @x - p.x) + 2 * Math.PI) % (2 * Math.PI)
 
   svg: -> @x + ',' + @y
 
@@ -142,25 +129,17 @@ class Color
 
   fillStyle: -> 'rgba(' + @r + ',' + @g + ',' + @b + ',' + @a/100 + ')'
 
-  svg: ->
-    rgb = '00000' + (@b .|. (@g .<<. 8) .|. (@r .<<. 16)).toString(16);
-    "stop-color='#" + rgb.substr(rgb.length - 6, 6) + "' stop-opacity='" + format(@a / 100) + "'"
-
-  mutate: (scale)  ->
-    min = clamp 8, (Math.round 16 / scale), 64
-    max = 2 * min
+  mutate: ->
     child = new Color @r, @g, @b, @a
     switch between 1, 4
       when 1
-        child.r = Math.round clamp 0, @r + plusOrMinus(min, max), 255
+        child.r = Math.round clamp 0, @r + plusOrMinus(8, 32), 255
       when 2
-        child.g = Math.round clamp 0, @g + plusOrMinus(min, max), 255
+        child.g = Math.round clamp 0, @g + plusOrMinus(8, 32), 255
       when 3
-        child.b = Math.round clamp 0, @b + plusOrMinus(min, max), 255
+        child.b = Math.round clamp 0, @b + plusOrMinus(8, 32), 255
       when 4
-        min = clamp 1, (Math.round 5 / scale), 10
-        max = 2 * min
-        child.a = clamp alphaMin, @a + plusOrMinus(min, max), alphaMax
+        child.a = clamp alphaMin, @a + plusOrMinus(1, 5), alphaMax
     return child
 
 class Painting
@@ -272,7 +251,7 @@ class Painting
         "Original image: " + storageKey +
       "</desc>" +
       "<defs>" +
-        [shape.svgGradient i for shape, i in @shapes].join('') +
+        # [shape.svgGradient i for shape, i in @shapes].join('') +
         # should be clipped to viewbox but webkit doesn't in some circumstances; plus this allows for some creativity
         "<clipPath id='clip'>" +
           "<path d='M-1,-1L" + (w+1) + ",-1L" + (w+1) + "," + (h+1) + "L-1," + (h+1) + "Z'/>" +
@@ -294,22 +273,12 @@ class Shape
       @randomize!
 
   randomize: !->
-    @sx = @sy = scaleMid
-    @rotate = between 1, 360
-    @p = new Point (between 1, paintingWidth), (between 1, paintingHeight)
-    @color1 = new Color!
-    @color2 = new Color!
+    @color = new Color!
     @path = new Path!
 
   paint: !(ctx) ->
     ctx.save!
-    gradient = ctx.createLinearGradient xMin, 0, xMax, 0
-    gradient.addColorStop 0, @color1.fillStyle!
-    gradient.addColorStop 1, @color2.fillStyle!
-    ctx.fillStyle = gradient
-    ctx.translate @p.x, @p.y
-    ctx.rotate @rotate * Math.PI / 180
-    ctx.scale @sx / 100, @sy / 100
+    ctx.fillStyle = @color.fillStyle!
     ctx.beginPath!
     @path.paint ctx
     ctx.closePath!
@@ -317,57 +286,41 @@ class Shape
     ctx.restore!
 
   mutate: ->
-    roll = between 0, 13
-    scale = @sx * @sy / 10000 # 100x100 = 1, smaller is lower, bigger is higher
+    roll = between 0, 5
     child = new Shape this
-    if roll < 7
-      child.path = @path.mutate scale
+    if roll > 0
+      child.path = @path.mutate!
       child.origin = 'shape'
-    else if roll < 8
-      child.rotate += plusOrMinus(5 / scale, 20 / scale)
-      child.origin = 'orientation'
-    else if roll < 9
-      child.sx = clamp scaleMin, @sx + plusOrMinus(scaleMin, scaleMax / 8), scaleMax
-      child.origin = 'size'
-    else if roll < 10
-      child.sy = clamp scaleMin, @sy + plusOrMinus(scaleMin, scaleMax / 8), scaleMax
-      child.origin = 'size'
-    else if roll < 11
-      child.p = @p.mutate scale
-      child.origin = 'position'
-    else if roll < 12
-      child.color1 = @color1.mutate scale
-      child.origin = 'color'
     else
-      child.color2 = @color2.mutate scale
+      child.color = @color.mutate!
       child.origin = 'color'
     return child
 
   svgGradient: (gradientId)  ->
-    "<linearGradient id='" + gradientId + "'>" +
+    "<linearGradient id='" + gradientId + "' gradientUnits='userSpaceOnUse'>" +
       "<stop offset='0%' "   + @color1.svg! + "/>" +
       "<stop offset='100%' " + @color2.svg! + "/>" +
     "</linearGradient>"
 
   svgPath: (gradientId) ->
-    scale = format(@sx / 100) + "," + format(@sy / 100)
-    transform = "translate(" + @p.svg! + ") rotate(" + @rotate + ") scale(" + scale + ")"
-    "<path transform='" + transform + "' fill='url(#" + gradientId + ")' d='" + @path.svg! + "'/>"
+    "<path fill='" + @color.fillStyle! + "' d='" + @path.svg! + "'/>"
 
-  cost: -> @path.cost! + 13
+  cost: -> @path.cost! + 5
 
 class Path
 
-  (source) -> if source then @points = source.points.slice 0 else @randomize!
+  (source) ->
+    if source
+      @points = source.points.slice 0
+      @center = source.center
+    else
+      @randomize!
 
   randomize: !->
-    p0 = new Point xMin, yMid
-    p0.locked = true
-    p1 = new Point xMax, yMid
-    p1.locked = true
-    @points = [p0, new Point!, p1]
+    @center = new Point!
+    @points = []
     while @points.length < pointsMin
-      @points.push new Point!
+      @points.push @center.mutate!
     @sort!
 
   paint: !(ctx) ->
@@ -380,33 +333,27 @@ class Path
       i += 2
       ctx.quadraticCurveTo control.x, control.y, point.x, point.y
 
-  clamp: (point) ->
-    x = clamp xMin, point.x, xMax
-    y = clamp yMin, point.y, yMax
-    new Point x, y
+  sort: !-> if radialSort then @points.sort (a, b) ~> a.angle(@center) - b.angle(@center)
 
-  sort: !-> if radialSort then @points.sort (a, b) -> a.angle! - b.angle!
+  randomPoint: -> between 0, @points.length - 1
 
-  randomPoint: ->
-    i = between 0, @points.length - 1
-    while @points[i].locked
-      i = between 0, @points.length - 1
-    return i
-
-  mutate: (scale) ->
+  mutate: ->
     roll = between 0, 7
     child = new Path this
     if roll < 5
       i = child.randomPoint!
-      child.points[i] = @clamp child.points[i].mutate scale
+      child.points[i] = child.points[i].mutate!
       child.sort!
     else if roll < 6 && @points.length >= pointsMin + 2
       child.points.splice child.randomPoint!, 1
       child.points.splice child.randomPoint!, 1
+    else if roll < 7
+      child.center = child.center.mutate!
+      child.sort!
     else
       p = new Point!
       child.points.push p
-      child.points.push @clamp p.mutate scale
+      child.points.push p.mutate!
       child.sort!
     return child
 
