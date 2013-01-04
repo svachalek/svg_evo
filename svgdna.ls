@@ -27,7 +27,8 @@ paintingMaxShapes = 100
 
 alphaMin = 30
 alphaMax = 60
-pointsMax = 10
+pointsMin = 6
+pointsMax = 16
 
 # these are on scaled path coordinates
 xMin = yMin = -50
@@ -111,8 +112,8 @@ class Point
   (@x, @y) -> unless x? then @randomize!
 
   randomize: ->
-    @x = between 1, paintingWidth
-    @y = between 1, paintingHeight
+    @x = between xMin, xMax
+    @y = between yMin, yMax
     return this
 
   mutate: (scale) ->
@@ -235,7 +236,7 @@ class Painting
     if roll < 1 && @shapes.length > 1
       child.origin.push 'remove'
       i = betweenHigh 0, @shapes.length - 1
-      child.shapes.splice(i, 1)
+      child.shapes.splice i, 1
     else if roll < 2 && @shapes.length < paintingMaxShapes
       child.origin.push 'add'
       child.shapes.push new Shape!
@@ -293,7 +294,7 @@ class Shape
   randomize: !->
     @sx = @sy = scaleMid
     @rotate = between 1, 360
-    @p = new Point!
+    @p = new Point (between 1, paintingWidth), (between 1, paintingHeight)
     @color1 = new Color!
     @color2 = new Color!
     @path = new Path!
@@ -362,19 +363,20 @@ class Path
     p0.locked = true
     p1 = new Point xMax, yMid
     p1.locked = true
-    p2 = new Point (between xMin, xMax), (between yMin, yMax)
-    @points = [p0, p1, p2]
+    @points = [p0, p1]
+    while @points.length < pointsMin
+      @points.push new Point!
     @sort!
 
   paint: !(ctx) ->
-    prev = first = @points[0]
+    first = @points[0]
     ctx.moveTo first.x, first.y
-    for point in @points.slice(1).concat([first])
-      a = (prev.angle! + point.angle!) / 2
-      r = Math.max (Math.sqrt prev.x * prev.x + prev.y * prev.y), (Math.sqrt point.x * point.x + point.y * point.y)
-      ctx.lineTo point.x, point.y
-      #  ctx.quadraticCurveTo point.x, point.y, r * Math.cos(a), r * Math.sin(a)
-      prev = point
+    i = 1
+    while i <= @points.length
+      control = @points[i % @points.length]
+      point = @points[(i + 1) % @points.length]
+      i += 2
+      ctx.quadraticCurveTo control.x, control.y, point.x, point.y
 
   clamp: (point) ->
     x = clamp xMin, point.x, xMax
@@ -383,33 +385,39 @@ class Path
 
   sort: !-> @points.sort (a, b) -> a.angle! - b.angle!
 
-  mutate: (scale) ->
-    roll = between 0, 5
-    child = new Path this
+  randomPoint: ->
     i = between 0, @points.length - 1
-    # points[0] cannot be moved or deleted but curve can be adjusted
-    if roll < 1 && @points.length > 3 && !@points[i].locked
-      child.points.splice i, 1
-    else if roll < 4 && !@points[i].locked
-      child.points[i] = @clamp @points[i].mutate scale
+    while @points[i].locked
+      i = between 0, @points.length - 1
+    return i
+
+  mutate: (scale) ->
+    roll = between 0, 7
+    child = new Path this
+    if roll < 5
+      i = child.randomPoint!
+      child.points[i] = @clamp child.points[i].mutate scale
       child.sort!
+    else if roll < 6 && @points.length >= pointsMin + 2
+      child.points.splice child.randomPoint!, 1
+      child.points.splice child.randomPoint!, 1
     else if @points.length < pointsMax
-      point = @clamp @points[i].mutate scale
-      child.points.push point
+      p = new Point!
+      child.points.push p
+      child.points.push @clamp p.mutate scale
       child.sort!
     return child
 
   svg: ->
-    prev = first = @points[0]
+    first = @points[0]
     svg = 'M' + first.svg!
-    for point in @points.slice(1).concat([first])
-      a = (prev.angle! + point.angle!) / 2
-      r = Math.max (Math.sqrt prev.x * prev.x + prev.y * prev.y), (Math.sqrt point.x * point.x + point.y * point.y)
-      control = new Point r * Math.cos(a), r * Math.sin(a)
-      svg += 'L' + point.svg!
-      # svg += 'Q' + point.svg! + ' ' + control.svg!
-      prev = point
-    svg + 'Z'
+    i = 1
+    while i <= @points.length
+      control = @points[i % @points.length]
+      point = @points[(i + 1) % @points.length]
+      i += 2
+      svg += 'Q' + control.svg! + ' ' + point.svg!
+    return svg
 
   cost: -> @points.length
 
