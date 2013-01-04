@@ -33,13 +33,13 @@ imgs =
     svg: 'MonaLisa.svg'
   },{
     o:   'images/StarryNight.jpg',
-    svg: 'StarryNight.svg'
+    svg: 'StarryNight-30k.svg'
   },{
     o:   'images/Lenna.jpg',
     svg: 'Lenna.svg'
   },{
     o:   'images/Flowers.jpg',
-    svg: 'Flowers.svg'
+    svg: 'Flowers-70k.svg'
   }
 
 imgIndex = -1
