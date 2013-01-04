@@ -84,13 +84,15 @@ format = (n) ->
 
 setText = (element, text) -> element.innerText = element.textContent = text
 
+diffRGB = (dr, dg, db) -> Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
+
 diffPoint = (d, x1, y1, x2, y2) ->
   b1 = (x1 + (y1 * paintingWidth)) * 4
   b2 = (x2 + (y2 * paintingWidth)) * 4
   dr = d[b1++] - d[b2++]
   dg = d[b1++] - d[b2++]
   db = d[b1++] - d[b2++]
-  Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
+  diffRGB dr, dg, db
 
 stringifier = (key, val) ->
   if val && typeof val == 'object'
@@ -201,8 +203,7 @@ class Painting
       dg = data[i] - targetData[i++]
       db = data[i] - targetData[i++]
       i++
-      # should match diffPoint above
-      diff = Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
+      diff = diffRGB dr, dg, db
       diffMap.push diff
       score += diff * weightMap[w++]
     @score = score
