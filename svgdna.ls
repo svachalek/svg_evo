@@ -425,7 +425,7 @@ targetData = null
 bestData = null
 
 mutate = !->
-  mutationRate = clamp 1, 5 - (Math.floor (Math.log generationNumber) / Math.LN10), 5
+  mutationRate = Math.max 1, 5 - (Math.floor (Math.log generationNumber) / Math.LN10)
   for i in [0 to generationMutate - 1]
     n = randomPainting!
     child = mom = paintings[n]
@@ -457,6 +457,7 @@ crossover = !->
 
 breed = !->
   startTime = Date.now!
+  ++generationNumber
   previousPaintings = paintings.slice 0
   # try some mutations
   mutate!
@@ -472,7 +473,6 @@ breed = !->
     painting.age = (painting.age || 0) + 1
     painting.show survivorBoxes[i]
   # update stats
-  ++generationNumber
   cumulativeTime += Date.now! - startTime
   setText document.getElementById('generation'), generationNumber
   setText document.getElementById('time'), (Math.floor cumulativeTime / 1000) + 's'
