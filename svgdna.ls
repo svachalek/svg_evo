@@ -25,6 +25,7 @@ paintingWidth = paintingBaseSize
 paintingHeight = paintingBaseSize
 costScoreRatio = 0.001
 weightMin = 0.02
+radialSort = true
 
 alphaMin = 30
 alphaMax = 60
@@ -364,7 +365,7 @@ class Path
     p0.locked = true
     p1 = new Point xMax, yMid
     p1.locked = true
-    @points = [p0, p1]
+    @points = [p0, new Point!, p1]
     while @points.length < pointsMin
       @points.push new Point!
     @sort!
@@ -384,7 +385,7 @@ class Path
     y = clamp yMin, point.y, yMax
     new Point x, y
 
-  sort: !-> @points.sort (a, b) -> a.angle! - b.angle!
+  sort: !-> if radialSort then @points.sort (a, b) -> a.angle! - b.angle!
 
   randomPoint: ->
     i = between 0, @points.length - 1
