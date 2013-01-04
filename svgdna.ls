@@ -24,6 +24,7 @@ paintingBaseSize = 100
 paintingWidth = paintingBaseSize
 paintingHeight = paintingBaseSize
 costScoreRatio = 0.001
+weightMin = 0.02
 
 alphaMin = 30
 alphaMax = 60
@@ -495,7 +496,7 @@ generateWeightMap = ->
   i = 0
   weightMap := []
   while i < edgeMap.length
-    weightMap.push clamp 0.02, edgeMap[i] + histoMap[i], 1
+    weightMap.push clamp weightMin, edgeMap[i] + histoMap[i], 1
     i++
   paintWeightMap!
 
