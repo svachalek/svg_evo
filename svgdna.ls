@@ -124,6 +124,10 @@ class Point
 
   svg: -> @x + ',' + @y
 
+POINT0 = new Point xMin, yMid
+POINT1 = new Point xMin, yMid
+POINT0.locked = POINT1.locked = true
+
 class Color
 
   (@r, @g, @b, @a) -> unless @r? then @randomize!
@@ -362,12 +366,12 @@ class Path
   randomize: !->
     x = between xMin, xMax
     y = between yMin, yMax
-    # first point is implicit (xMin, yMid)
-    @points = [(new Point xMax, yMid), (new Point x, y)]
+    # first point is implicit POINT0
+    @points = [POINT1, (new Point x, y)]
     @controls = [point.mutate 1 for point in @points]
 
   paint: !(ctx) ->
-    ctx.moveTo xMin, yMid
+    ctx.moveTo POINT0.x, POINT0.y
     for point, i in @points
       ctx.quadraticCurveTo point.x, point.y, @controls[i].x, @controls[i].y
 
@@ -393,7 +397,7 @@ class Path
       child.controls[i] = @clamp child.controls[i].mutate scale
     return child
 
-  svg: -> 'M' + xMin + ',' + yMid + [("Q" + point.svg! + ' ' + @controls[i].svg!) for point, i in @points].join('')
+  svg: -> 'M' + POINT0.svg! + [("Q" + point.svg! + ' ' + @controls[i].svg!) for point, i in @points].join('')
 
   cost: -> @points.length
 
