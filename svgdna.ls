@@ -122,11 +122,9 @@ class Point
     dy = r * Math.sin a
     new Point (Math.round @x + dx), (Math.round @y + dy)
 
-  svg: -> @x + ',' + @y
+  angle: -> ((Math.atan2 @y, @x) + 2 * Math.PI) % (2 * Math.PI)
 
-POINT0 = new Point xMin, yMid
-POINT1 = new Point xMin, yMid
-POINT0.locked = POINT1.locked = true
+  svg: -> @x + ',' + @y
 
 class Color
 
@@ -357,47 +355,61 @@ class Shape
 
 class Path
 
-  (source) ->
-    if source
-      @points = source.points.slice 0
-      @controls = source.controls.slice 0
-    else @randomize!
+  (source) -> if source then @points = source.points.slice 0 else @randomize!
 
   randomize: !->
-    x = between xMin, xMax
-    y = between yMin, yMax
-    # first point is implicit POINT0
-    @points = [POINT1, (new Point x, y)]
-    @controls = [point.mutate 1 for point in @points]
+    p0 = new Point xMin, yMid
+    p0.locked = true
+    p1 = new Point xMax, yMid
+    p1.locked = true
+    p2 = new Point (between xMin, xMax), (between yMin, yMax)
+    @points = [p0, p1, p2]
+    @sort!
 
   paint: !(ctx) ->
-    ctx.moveTo POINT0.x, POINT0.y
-    for point, i in @points
-      ctx.quadraticCurveTo point.x, point.y, @controls[i].x, @controls[i].y
+    prev = first = @points[0]
+    ctx.moveTo first.x, first.y
+    for point in @points.slice(1).concat([first])
+      a = (prev.angle! + point.angle!) / 2
+      r = Math.max (Math.sqrt prev.x * prev.x + prev.y * prev.y), (Math.sqrt point.x * point.x + point.y * point.y)
+      ctx.lineTo point.x, point.y
+      #  ctx.quadraticCurveTo point.x, point.y, r * Math.cos(a), r * Math.sin(a)
+      prev = point
 
   clamp: (point) ->
     x = clamp xMin, point.x, xMax
     y = clamp yMin, point.y, yMax
     new Point x, y
 
+  sort: !-> @points.sort (a, b) -> a.angle! - b.angle!
+
   mutate: (scale) ->
-    roll = between 0, 7
+    roll = between 0, 5
     child = new Path this
     i = between 0, @points.length - 1
     # points[0] cannot be moved or deleted but curve can be adjusted
-    if roll < 1 && @points.length < pointsMax
-      child.points.splice i, 0, @clamp @points[i].mutate scale
-      child.controls.splice i, 0, @clamp child.points[i].mutate scale
-    else if roll < 2 && i > 0
+    if roll < 1 && @points.length > 3 && !@points[i].locked
       child.points.splice i, 1
-      child.controls.splice i, 1
-    else if roll < 5 && i > 0
+    else if roll < 4 && !@points[i].locked
       child.points[i] = @clamp @points[i].mutate scale
-    else
-      child.controls[i] = @clamp child.controls[i].mutate scale
+      child.sort!
+    else if @points.length < pointsMax
+      point = @clamp @points[i].mutate scale
+      child.points.push point
+      child.sort!
     return child
 
-  svg: -> 'M' + POINT0.svg! + [("Q" + point.svg! + ' ' + @controls[i].svg!) for point, i in @points].join('')
+  svg: ->
+    prev = first = @points[0]
+    svg = 'M' + first.svg!
+    for point in @points.slice(1).concat([first])
+      a = (prev.angle! + point.angle!) / 2
+      r = Math.max (Math.sqrt prev.x * prev.x + prev.y * prev.y), (Math.sqrt point.x * point.x + point.y * point.y)
+      control = new Point r * Math.cos(a), r * Math.sin(a)
+      svg += 'L' + point.svg!
+      # svg += 'Q' + point.svg! + ' ' + control.svg!
+      prev = point
+    svg + 'Z'
 
   cost: -> @points.length
 
