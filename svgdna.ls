@@ -28,7 +28,7 @@ paintingMaxShapes = 100
 alphaMin = 30
 alphaMax = 60
 pointsMin = 6
-pointsMax = 16
+pointsMax = 20
 
 # these are on scaled path coordinates
 xMin = yMin = -50
