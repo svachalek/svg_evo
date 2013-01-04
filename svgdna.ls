@@ -23,7 +23,7 @@ lastShownIndex = 0
 paintingBaseSize = 100
 paintingWidth = paintingBaseSize
 paintingHeight = paintingBaseSize
-paintingMaxShapes = 100
+costScoreRatio = 0.001
 
 alphaMin = 30
 alphaMax = 60
@@ -209,7 +209,7 @@ class Painting
       diff = diffRGB dr, dg, db
       diffMap.push diff
       score += diff * weightMap[w++]
-    @score = score
+    @score = score + @cost! * costScoreRatio
     @diffMap = diffMap
 
   paintDiffMap: (canvas) ->
@@ -237,7 +237,7 @@ class Painting
       child.origin.push 'remove'
       i = betweenHigh 0, @shapes.length - 1
       child.shapes.splice i, 1
-    else if roll < 2 && @shapes.length < paintingMaxShapes
+    else if roll < 2
       child.origin.push 'add'
       child.shapes.push new Shape!
     else if roll < 5 && @shapes.length >= 2
@@ -352,7 +352,7 @@ class Shape
     transform = "translate(" + @p.svg! + ") rotate(" + @rotate + ") scale(" + scale + ")"
     "<path transform='" + transform + "' fill='url(#" + gradientId + ")' d='" + @path.svg! + "'/>"
 
-  cost: -> @path.cost!
+  cost: -> @path.cost! + 13
 
 class Path
 
@@ -401,7 +401,7 @@ class Path
     else if roll < 6 && @points.length >= pointsMin + 2
       child.points.splice child.randomPoint!, 1
       child.points.splice child.randomPoint!, 1
-    else if @points.length < pointsMax
+    else
       p = new Point!
       child.points.push p
       child.points.push @clamp p.mutate scale
