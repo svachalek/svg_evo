@@ -1,29 +1,23 @@
-var storageKey, svgId, showIndex, lastShownIndex, paintingBaseSize, paintingWidth, paintingHeight, paintingMaxShapes, alphaMin, alphaMax, pointsMin, pointsMax, xMin, yMin, xMax, yMax, xMid, yMid, shapeSize, xRange, scaleMax, scaleMin, scaleMid, generationKeep, generationMutate, generationCross, generationNumber, cumulativeTime, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, format, setText, diffRGB, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, mutate, crossover, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
-storageKey = null;
-svgId = 0;
-showIndex = 0;
-lastShownIndex = 0;
+var paintingBaseSize, costScoreRatio, diffMapSensitivity, weightMin, radialSort, alphaMin, alphaMax, pointsMin, generationKeep, generationMutate, generationCross, generationNumber, cumulativeTime, storageKey, svgId, showIndex, lastShownIndex, paintingWidth, paintingHeight, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, mutate, crossover, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
 paintingBaseSize = 100;
-paintingWidth = paintingBaseSize;
-paintingHeight = paintingBaseSize;
-paintingMaxShapes = 100;
+costScoreRatio = 0.002;
+diffMapSensitivity = 0x4000;
+weightMin = 0.02;
+radialSort = true;
 alphaMin = 30;
 alphaMax = 60;
 pointsMin = 6;
-pointsMax = 16;
-xMin = yMin = -50;
-xMax = yMax = +50;
-xMid = yMid = (xMin + xMax) / 2;
-shapeSize = 10;
-xRange = xMax - xMin;
-scaleMax = Math.round(100 * paintingBaseSize / xRange);
-scaleMin = Math.round(100 * 1 / xRange);
-scaleMid = Math.round(100 * shapeSize / xRange);
 generationKeep = 4;
 generationMutate = 15;
 generationCross = 1;
 generationNumber = 0;
 cumulativeTime = 0;
+storageKey = null;
+svgId = 0;
+showIndex = 0;
+lastShownIndex = 0;
+paintingWidth = paintingBaseSize;
+paintingHeight = paintingBaseSize;
 paintings = [];
 survivorBoxes = [];
 mutantBoxes = [];
@@ -72,27 +66,8 @@ clamp = function(min, n, max){
 plusOrMinus = function(min, max){
   return randomSign() * between(max, min);
 };
-format = function(n){
-  var sign;
-  if (n < 0) {
-    n = -n;
-    sign = '-';
-  } else {
-    sign = '';
-  }
-  if (n >= 100) {
-    return sign + Math.floor(n).toString();
-  } else if (n < 1) {
-    return sign + n.toString().slice(1, 4);
-  } else {
-    return sign + n.toString().slice(0, 4);
-  }
-};
 setText = function(element, text){
   return element.innerText = element.textContent = text;
-};
-diffRGB = function(dr, dg, db){
-  return Math.sqrt((dr * dr + dg * dg + db * db) / (3 * 255 * 255));
 };
 diffPoint = function(d, x1, y1, x2, y2){
   var b1, b2, dr, dg, db;
@@ -101,7 +76,7 @@ diffPoint = function(d, x1, y1, x2, y2){
   dr = d[b1++] - d[b2++];
   dg = d[b1++] - d[b2++];
   db = d[b1++] - d[b2++];
-  return diffRGB(dr, dg, db);
+  return Math.sqrt((dr * dr + dg * dg + db * db) / 0x30000);
 };
 stringifier = function(key, val){
   if (val && typeof val === 'object') {
@@ -130,20 +105,18 @@ Point = (function(){
     }
   }
   prototype.randomize = function(){
-    this.x = between(xMin, xMax);
-    this.y = between(yMin, yMax);
+    this.x = between(0, paintingWidth - 1);
+    this.y = between(0, paintingHeight - 1);
     return this;
   };
-  prototype.mutate = function(scale){
-    var r, a, dx, dy;
-    r = between(1, clamp(1, shapeSize / scale, 50));
-    a = between(1, 360);
-    dx = r * Math.cos(a);
-    dy = r * Math.sin(a);
-    return new Point(Math.round(this.x + dx), Math.round(this.y + dy));
+  prototype.mutate = function(){
+    var dx, dy;
+    dx = between(-2, +2);
+    dy = between(-2, +2);
+    return new Point(this.x + dx, this.y + dy);
   };
-  prototype.angle = function(){
-    return (Math.atan2(this.y, this.x) + 2 * Math.PI) % (2 * Math.PI);
+  prototype.angle = function(p){
+    return (Math.atan2(this.y - p.y, this.x - p.x) + 2 * Math.PI) % (2 * Math.PI);
   };
   prototype.svg = function(){
     return this.x + ',' + this.y;
@@ -172,30 +145,21 @@ Color = (function(){
   prototype.fillStyle = function(){
     return 'rgba(' + this.r + ',' + this.g + ',' + this.b + ',' + this.a / 100 + ')';
   };
-  prototype.svg = function(){
-    var rgb;
-    rgb = '00000' + (this.b | this.g << 8 | this.r << 16).toString(16);
-    return "stop-color='#" + rgb.substr(rgb.length - 6, 6) + "' stop-opacity='" + format(this.a / 100) + "'";
-  };
-  prototype.mutate = function(scale){
-    var min, max, child;
-    min = clamp(8, Math.round(16 / scale), 64);
-    max = 2 * min;
+  prototype.mutate = function(){
+    var child;
     child = new Color(this.r, this.g, this.b, this.a);
     switch (between(1, 4)) {
     case 1:
-      child.r = Math.round(clamp(0, this.r + plusOrMinus(min, max), 255));
+      child.r = clamp(0, this.r + plusOrMinus(1, 16), 255);
       break;
     case 2:
-      child.g = Math.round(clamp(0, this.g + plusOrMinus(min, max), 255));
+      child.g = clamp(0, this.g + plusOrMinus(1, 16), 255);
       break;
     case 3:
-      child.b = Math.round(clamp(0, this.b + plusOrMinus(min, max), 255));
+      child.b = clamp(0, this.b + plusOrMinus(1, 16), 255);
       break;
     case 4:
-      min = clamp(1, Math.round(5 / scale), 10);
-      max = 2 * min;
-      child.a = clamp(alphaMin, this.a + plusOrMinus(min, max), alphaMax);
+      child.a = clamp(alphaMin, this.a + plusOrMinus(1, 5), alphaMax);
     }
     return child;
   };
@@ -253,7 +217,7 @@ Painting = (function(){
     var ctx, score, diffMap, data, i, w, l, dr, dg, db, diff;
     ctx = canvas.getContext('2d');
     score = 0;
-    diffMap = [];
+    diffMap = new Array(weightMap.length);
     data = ctx.getImageData(0, 0, paintingWidth, paintingHeight).data;
     i = w = 0;
     l = data.length;
@@ -262,11 +226,11 @@ Painting = (function(){
       dg = data[i] - targetData[i++];
       db = data[i] - targetData[i++];
       i++;
-      diff = diffRGB(dr, dg, db);
-      diffMap.push(diff);
+      diff = dr * dr + dg * dg + db * db;
+      diffMap[w] = diff;
       score += diff * weightMap[w++];
     }
-    this.score = score;
+    this.score = score / (paintingWidth * paintingHeight) + this.cost() * costScoreRatio;
     return this.diffMap = diffMap;
   };
   prototype.paintDiffMap = function(canvas){
@@ -283,7 +247,7 @@ Painting = (function(){
     i = 0;
     for (i$ = 0, len$ = (ref$ = this.diffMap).length; i$ < len$; ++i$) {
       point = ref$[i$];
-      color = Math.floor((1 - point) * 255);
+      color = 255 * (1 - point / diffMapSensitivity);
       data[i++] = color;
       data[i++] = color;
       data[i++] = color;
@@ -299,7 +263,7 @@ Painting = (function(){
       child.origin.push('remove');
       i = betweenHigh(0, this.shapes.length - 1);
       child.shapes.splice(i, 1);
-    } else if (roll < 2 && this.shapes.length < paintingMaxShapes) {
+    } else if (roll < 2) {
       child.origin.push('add');
       child.shapes.push(new Shape());
     } else if (roll < 5 && this.shapes.length >= 2) {
@@ -316,9 +280,10 @@ Painting = (function(){
     return child;
   };
   prototype.cross = function(other){
-    var i, j, shapes;
-    i = between(Math.round(this.shapes.length / 4), this.shapes.length);
-    j = i + between(Math.round(this.shapes.length / 4), this.shapes.length / 3 / 4);
+    var len, i, j, shapes;
+    len = Math.min(this.shapes.length, other.shapes.length);
+    i = between(Math.round(len / 4), len);
+    j = i + between(Math.round(len / 4), len * 3 / 4);
     shapes = this.shapes.slice(0, i).concat(other.shapes.slice(i, j)).concat(this.shapes.slice(j));
     return new Painting(shapes, ['cross']);
   };
@@ -326,15 +291,7 @@ Painting = (function(){
     var w, h, i, shape;
     w = paintingWidth;
     h = paintingHeight;
-    return "<svg xmlns='http://www.w3.org/2000/svg' width='" + w * 10 + "px' height='" + h * 10 + "px' " + "viewBox='0 0 " + w + " " + paintingHeight + "'>" + "<title>" + "Generated by SVGDNA at http://svachalek.github.com/svgdna" + "</title>" + "<desc>" + "Original image: " + storageKey + "</desc>" + "<defs>" + (function(){
-      var i$, ref$, len$, results$ = [];
-      for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
-        i = i$;
-        shape = ref$[i$];
-        results$.push(shape.svgGradient(i));
-      }
-      return results$;
-    }.call(this)).join('') + "<clipPath id='clip'>" + "<path d='M-1,-1L" + (w + 1) + ",-1L" + (w + 1) + "," + (h + 1) + "L-1," + (h + 1) + "Z'/>" + "</clipPath>" + "</defs>" + "<g clip-path='url(#clip)'>" + (function(){
+    return "<svg xmlns='http://www.w3.org/2000/svg' width='" + w * 10 + "px' height='" + h * 10 + "px' " + "viewBox='0 0 " + w + " " + paintingHeight + "'>" + "<title>" + "Generated by SVGDNA at http://svachalek.github.com/svgdna" + "</title>" + "<desc>" + "Original image: " + storageKey + "</desc>" + "<defs>" + "<clipPath id='clip'>" + "<path d='M-1,-1L" + (w + 1) + ",-1L" + (w + 1) + "," + (h + 1) + "L-1," + (h + 1) + "Z'/>" + "</clipPath>" + "</defs>" + "<g clip-path='url(#clip)'>" + (function(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
         i = i$;
@@ -374,23 +331,12 @@ Shape = (function(){
     }
   }
   prototype.randomize = function(){
-    this.sx = this.sy = scaleMid;
-    this.rotate = between(1, 360);
-    this.p = new Point(between(1, paintingWidth), between(1, paintingHeight));
-    this.color1 = new Color();
-    this.color2 = new Color();
+    this.color = new Color();
     this.path = new Path();
   };
   prototype.paint = function(ctx){
-    var gradient;
     ctx.save();
-    gradient = ctx.createLinearGradient(xMin, 0, xMax, 0);
-    gradient.addColorStop(0, this.color1.fillStyle());
-    gradient.addColorStop(1, this.color2.fillStyle());
-    ctx.fillStyle = gradient;
-    ctx.translate(this.p.x, this.p.y);
-    ctx.rotate(this.rotate * Math.PI / 180);
-    ctx.scale(this.sx / 100, this.sy / 100);
+    ctx.fillStyle = this.color.fillStyle();
     ctx.beginPath();
     this.path.paint(ctx);
     ctx.closePath();
@@ -398,45 +344,26 @@ Shape = (function(){
     ctx.restore();
   };
   prototype.mutate = function(){
-    var roll, scale, child;
-    roll = between(0, 13);
-    scale = this.sx * this.sy / 10000;
+    var roll, child;
+    roll = between(0, 5);
     child = new Shape(this);
-    if (roll < 7) {
-      child.path = this.path.mutate(scale);
+    if (roll > 0) {
+      child.path = this.path.mutate();
       child.origin = 'shape';
-    } else if (roll < 8) {
-      child.rotate += plusOrMinus(5 / scale, 20 / scale);
-      child.origin = 'orientation';
-    } else if (roll < 9) {
-      child.sx = clamp(scaleMin, this.sx + plusOrMinus(scaleMin, scaleMax / 8), scaleMax);
-      child.origin = 'size';
-    } else if (roll < 10) {
-      child.sy = clamp(scaleMin, this.sy + plusOrMinus(scaleMin, scaleMax / 8), scaleMax);
-      child.origin = 'size';
-    } else if (roll < 11) {
-      child.p = this.p.mutate(scale);
-      child.origin = 'position';
-    } else if (roll < 12) {
-      child.color1 = this.color1.mutate(scale);
-      child.origin = 'color';
     } else {
-      child.color2 = this.color2.mutate(scale);
+      child.color = this.color.mutate();
       child.origin = 'color';
     }
     return child;
   };
   prototype.svgGradient = function(gradientId){
-    return "<linearGradient id='" + gradientId + "'>" + "<stop offset='0%' " + this.color1.svg() + "/>" + "<stop offset='100%' " + this.color2.svg() + "/>" + "</linearGradient>";
+    return "<linearGradient id='" + gradientId + "' gradientUnits='userSpaceOnUse'>" + "<stop offset='0%' " + this.color1.svg() + "/>" + "<stop offset='100%' " + this.color2.svg() + "/>" + "</linearGradient>";
   };
   prototype.svgPath = function(gradientId){
-    var scale, transform;
-    scale = format(this.sx / 100) + "," + format(this.sy / 100);
-    transform = "translate(" + this.p.svg() + ") rotate(" + this.rotate + ") scale(" + scale + ")";
-    return "<path transform='" + transform + "' fill='url(#" + gradientId + ")' d='" + this.path.svg() + "'/>";
+    return "<path fill='" + this.color.fillStyle() + "' d='" + this.path.svg() + "'/>";
   };
   prototype.cost = function(){
-    return this.path.cost();
+    return this.path.cost() + 5;
   };
   return Shape;
 }());
@@ -446,19 +373,16 @@ Path = (function(){
   function Path(source){
     if (source) {
       this.points = source.points.slice(0);
+      this.center = source.center;
     } else {
       this.randomize();
     }
   }
   prototype.randomize = function(){
-    var p0, p1;
-    p0 = new Point(xMin, yMid);
-    p0.locked = true;
-    p1 = new Point(xMax, yMid);
-    p1.locked = true;
-    this.points = [p0, p1];
+    this.center = new Point();
+    this.points = [];
     while (this.points.length < pointsMin) {
-      this.points.push(new Point());
+      this.points.push(this.center.mutate());
     }
     this.sort();
   };
@@ -474,40 +398,37 @@ Path = (function(){
       ctx.quadraticCurveTo(control.x, control.y, point.x, point.y);
     }
   };
-  prototype.clamp = function(point){
-    var x, y;
-    x = clamp(xMin, point.x, xMax);
-    y = clamp(yMin, point.y, yMax);
-    return new Point(x, y);
-  };
   prototype.sort = function(){
-    this.points.sort(function(a, b){
-      return a.angle() - b.angle();
-    });
-  };
-  prototype.randomPoint = function(){
-    var i;
-    i = between(0, this.points.length - 1);
-    while (this.points[i].locked) {
-      i = between(0, this.points.length - 1);
+    var this$ = this;
+    if (radialSort) {
+      this.points.sort(function(a, b){
+        return a.angle(this$.center) - b.angle(this$.center);
+      });
     }
-    return i;
   };
-  prototype.mutate = function(scale){
+  prototype.mutate = function(){
     var roll, child, i, p;
-    roll = between(0, 7);
+    roll = between(0, 9);
     child = new Path(this);
-    if (roll < 5) {
-      i = child.randomPoint();
-      child.points[i] = this.clamp(child.points[i].mutate(scale));
+    if (roll < 7) {
+      i = between(0, child.points.length - 1);
+      child.points[i] = child.points[i].mutate();
       child.sort();
-    } else if (roll < 6 && this.points.length >= pointsMin + 2) {
-      child.points.splice(child.randomPoint(), 1);
-      child.points.splice(child.randomPoint(), 1);
-    } else if (this.points.length < pointsMax) {
+    } else if (roll < 8 && this.points.length >= pointsMin + 2) {
+      i = between(0, child.points.length / 2 - 1);
+      child.points.splice(i * 2, 1);
+      if (i === 0) {
+        child.points.pop();
+      } else {
+        child.points.splice(i * 2 - 1, 1);
+      }
+    } else if (roll < 9) {
+      child.center = child.center.mutate();
+      child.sort();
+    } else {
       p = new Point();
       child.points.push(p);
-      child.points.push(this.clamp(p.mutate(scale)));
+      child.points.push(p.mutate());
       child.sort();
     }
     return child;
@@ -534,7 +455,7 @@ targetData = null;
 bestData = null;
 mutate = function(){
   var mutationRate, i$, ref$, len$, i, n, child, mom, j;
-  mutationRate = clamp(1, 5 - Math.floor(Math.log(generationNumber) / Math.LN10), 5);
+  mutationRate = Math.max(1, 5 - Math.floor(Math.log(generationNumber) / Math.LN10));
   for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
     i = ref$[i$];
     n = randomPainting();
@@ -590,6 +511,7 @@ crossover = function(){
 breed = function(){
   var startTime, previousPaintings, lastShownIndex, best, i$, ref$, len$, i, painting, key, val, percent, fraction;
   startTime = Date.now();
+  ++generationNumber;
   previousPaintings = paintings.slice(0);
   mutate();
   crossover();
@@ -605,7 +527,6 @@ breed = function(){
     painting.age = (painting.age || 0) + 1;
     painting.show(survivorBoxes[i]);
   }
-  ++generationNumber;
   cumulativeTime += Date.now() - startTime;
   setText(document.getElementById('generation'), generationNumber);
   setText(document.getElementById('time'), Math.floor(cumulativeTime / 1000) + 's');
@@ -629,7 +550,7 @@ generateWeightMap = function(){
   i = 0;
   weightMap = [];
   while (i < edgeMap.length) {
-    weightMap.push(clamp(0.02, edgeMap[i] + histoMap[i], 1));
+    weightMap.push(clamp(weightMin, edgeMap[i] + histoMap[i], 1));
     i++;
   }
   return paintWeightMap();

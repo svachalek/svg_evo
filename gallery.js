@@ -1,8 +1,8 @@
 var imgs, imgIndex, box, source, painting, timeoutImage, timeoutOpacity, scaleImages, nextImage, transitionOpacity;
 imgs = [
   {
-    o: 'images/MonaLisaFace.jpg',
-    svg: 'MonaLisaFace.svg'
+    o: 'images/MonaLisa.jpg',
+    svg: 'MonaLisa-400k.svg'
   }, {
     o: 'https://lh3.googleusercontent.com/-VqbjDm2twT4/SxBj8kbEugI/AAAAAAAABWA/nmnZw0hFaF0/s572/Picture+006.jpg',
     svg: 'HalfMoonBay-25k.svg'
@@ -13,17 +13,17 @@ imgs = [
     o: 'images/GrandCanyon.jpg',
     svg: 'GrandCanyon.svg'
   }, {
-    o: 'images/MonaLisa.jpg',
-    svg: 'MonaLisa.svg'
+    o: 'images/MonaLisaFace.jpg',
+    svg: 'MonaLisaFace.svg'
   }, {
     o: 'images/StarryNight.jpg',
-    svg: 'StarryNight.svg'
+    svg: 'StarryNight-30k.svg'
   }, {
     o: 'images/Lenna.jpg',
     svg: 'Lenna.svg'
   }, {
     o: 'images/Flowers.jpg',
-    svg: 'Flowers.svg'
+    svg: 'Flowers-70k.svg'
   }
 ];
 imgIndex = -1;
