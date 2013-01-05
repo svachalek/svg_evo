@@ -31,7 +31,7 @@ generationCross = 1
 generationNumber = 0
 cumulativeTime = 0
 
-storageKey = null
+storageKey = 'paintings'
 imageSource = null
 targetData = null
 showIndex = 0
@@ -419,7 +419,7 @@ breed = !->
     setText document.getElementById('success-' + key), fraction + ' (' + percent + ')'
   # save
   if generationNumber % 100 == 0
-    localStorage.setItem storageKey, JSON.stringify paintings, stringifier
+    sessionStorage.setItem storageKey, JSON.stringify paintings, stringifier
   # and repeat
   setTimeout breed, 0
 
@@ -539,12 +539,10 @@ window.addEventListener 'load', ->
     ctx.drawImage imageSource, 0, 0, paintingWidth, paintingHeight
     targetData := (ctx.getImageData 0, 0, paintingWidth, paintingHeight).data
     generateWeightMap!
-    storageKey := imageSource.src
-    if window.__proto__ && localStorage.getItem storageKey
-      paintings := (JSON.parse localStorage.getItem(storageKey), reviver).concat(paintings).slice 0, generationKeep
+    if window.__proto__ && sessionStorage.getItem storageKey
+      paintings := (JSON.parse sessionStorage.getItem(storageKey), reviver).concat(paintings).slice 0, generationKeep
       resetStats!
     else
       restart!
-    sessionStorage.setItem 'url', imageSource.src
     setTimeout breed, 0
 
