@@ -20,6 +20,10 @@ imgs =
     o:   'images/MonaLisa.jpg',
     svg: 'MonaLisa-400k.svg'
   },{
+    o:   'images/MonaLisaFace.jpg',
+    svg: 'MonaLisaFace-100k.svg'
+  /*
+  },{
     o:   'https://lh3.googleusercontent.com/-VqbjDm2twT4/SxBj8kbEugI/AAAAAAAABWA/nmnZw0hFaF0/s572/Picture+006.jpg',
     svg: 'HalfMoonBay-25k.svg'
   },{
@@ -40,6 +44,7 @@ imgs =
   },{
     o:   'images/Flowers.jpg',
     svg: 'Flowers-70k.svg'
+  */
   }
 
 imgIndex = -1
