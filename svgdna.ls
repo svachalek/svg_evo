@@ -133,11 +133,11 @@ class Color
     child = new Color @r, @g, @b, @a
     switch between 1, 4
       when 1
-        child.r = Math.round clamp 0, @r + plusOrMinus(8, 32), 255
+        child.r = Math.round clamp 0, @r + plusOrMinus(1, 16), 255
       when 2
-        child.g = Math.round clamp 0, @g + plusOrMinus(8, 32), 255
+        child.g = Math.round clamp 0, @g + plusOrMinus(1, 16), 255
       when 3
-        child.b = Math.round clamp 0, @b + plusOrMinus(8, 32), 255
+        child.b = Math.round clamp 0, @b + plusOrMinus(1, 16), 255
       when 4
         child.a = clamp alphaMin, @a + plusOrMinus(1, 5), alphaMax
     return child
@@ -234,8 +234,9 @@ class Painting
     return child
 
   cross: (other) ->
-    i = between (Math.round @shapes.length / 4), @shapes.length
-    j = i + between (Math.round @shapes.length / 4), @shapes.length / 3/4
+    len = Math.min @shapes.length, other.shapes.length
+    i = between (Math.round len / 4), len
+    j = i + between (Math.round len / 4), len * 3/4
     shapes = (@shapes.slice 0, i).concat(other.shapes.slice i, j).concat(@shapes.slice(j))
     new Painting shapes, ['cross']
 
