@@ -15,22 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with SVGDNA.  If not, see <http://www.gnu.org/licenses/>
 
-storageKey = null
-svgId = 0
-showIndex = 0
-lastShownIndex = 0
-
 paintingBaseSize = 100
-paintingWidth = paintingBaseSize
-paintingHeight = paintingBaseSize
-costScoreRatio = 0.001
+costScoreRatio = 0.002
+diffMapSensitivity = 0x4000
 weightMin = 0.02
 radialSort = true
 
 alphaMin = 30
 alphaMax = 60
 pointsMin = 6
-pointsMax = 20
 
 generationKeep = 4
 generationMutate = 15
@@ -38,6 +31,13 @@ generationCross = 1
 generationNumber = 0
 cumulativeTime = 0
 
+storageKey = null
+svgId = 0
+showIndex = 0
+lastShownIndex = 0
+
+paintingWidth = paintingBaseSize
+paintingHeight = paintingBaseSize
 paintings = []
 survivorBoxes = []
 mutantBoxes = []
@@ -63,15 +63,13 @@ plusOrMinus = (min, max) -> randomSign! * between max, min
 
 setText = (element, text) -> element.innerText = element.textContent = text
 
-diffRGB = (dr, dg, db) -> Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
-
 diffPoint = (d, x1, y1, x2, y2) ->
   b1 = (x1 + (y1 * paintingWidth)) * 4
   b2 = (x2 + (y2 * paintingWidth)) * 4
   dr = d[b1++] - d[b2++]
   dg = d[b1++] - d[b2++]
   db = d[b1++] - d[b2++]
-  diffRGB dr, dg, db
+  Math.sqrt (dr * dr + dg * dg + db * db) / 0x30000
 
 stringifier = (key, val) ->
   if val && typeof val == 'object'
@@ -174,10 +172,10 @@ class Painting
       dg = data[i] - targetData[i++]
       db = data[i] - targetData[i++]
       i++
-      diff = diffRGB dr, dg, db
+      diff = dr * dr + dg * dg + db * db
       diffMap[w] = diff
       score += diff * weightMap[w++]
-    @score = score + @cost! * costScoreRatio
+    @score = score / (paintingWidth * paintingHeight) + @cost! * costScoreRatio
     @diffMap = diffMap
 
   paintDiffMap: (canvas) ->
@@ -187,11 +185,11 @@ class Painting
     canvas.width = paintingWidth
     canvas.height = paintingHeight
     ctx = canvas.getContext '2d'
-    diffData = ctx.createImageData(paintingWidth, paintingHeight)
+    diffData = ctx.createImageData paintingWidth, paintingHeight
     data = diffData.data
     i = 0
     for point in @diffMap
-      color = Math.floor (1 - point) * 255
+      color = 255 * (1 - point / diffMapSensitivity)
       data[i++] = color # r
       data[i++] = color # g
       data[i++] = color # b
