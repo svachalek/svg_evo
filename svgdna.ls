@@ -165,7 +165,7 @@ class Painting
   diffScore: (canvas) ->
     ctx = canvas.getContext '2d'
     score = 0
-    diffMap = []
+    diffMap = new Array weightMap.length
     data = (ctx.getImageData 0, 0, paintingWidth, paintingHeight).data
     i = w = 0
     l = data.length
@@ -175,7 +175,7 @@ class Painting
       db = data[i] - targetData[i++]
       i++
       diff = diffRGB dr, dg, db
-      diffMap.push diff
+      diffMap[w] = diff
       score += diff * weightMap[w++]
     @score = score + @cost! * costScoreRatio
     @diffMap = diffMap
