@@ -34,6 +34,7 @@ cumulativeTime = 0
 storageKey = 'paintings'
 imageSource = null
 targetData = null
+weightMap = null
 showIndex = 0
 lastShownIndex = 0
 
@@ -62,7 +63,7 @@ randomSign = -> if Math.random! < 0.5 then -1 else 1
 clamp = (min, n, max) -> if n < min then min else if n > max then max else n
 plusOrMinus = (min, max) -> randomSign! * between max, min
 
-setText = (element, text) -> if element then element.innerText = element.textContent = text
+setText = (element, text) -> element.innerText = element.textContent = text
 
 diffPoint = (d, x1, y1, x2, y2) ->
   b1 = (x1 + (y1 * paintingWidth)) * 4
@@ -180,7 +181,6 @@ class Painting
     @diffMap = diffMap
 
   paintDiffMap: (canvas) ->
-    return unless canvas
     unless @diffMap
       @paint canvas
       @diffScore canvas
@@ -394,36 +394,21 @@ crossover = !->
 breed = !->
   startTime = Date.now!
   ++generationNumber
-  previousPaintings = paintings.slice 0
   # try some mutations
+  previousPaintings = paintings.slice 0
   mutate!
   crossover!
+  cumulativeTime := cumulativeTime + Date.now! - startTime
   # show the best
   if showIndex != lastShownIndex || paintings[showIndex] != previousPaintings[showIndex]
     lastShownIndex = showIndex
-    # the base64 encoding shouldn't be necessary but Firefox can't handle the image otherwise
-    (document.getElementById 'best-large').src = 'data:image/svg+xml;base64,' + base64.encode paintings[showIndex].svg!
-    paintings[showIndex].paintDiffMap document.getElementById 'diff'
-  best = paintings[0]
-  for painting, i in paintings
-    painting.age = (painting.age || 0) + 1
-    painting.show survivorBoxes[i]
-  # update stats
-  cumulativeTime += Date.now! - startTime
-  setText document.getElementById('generation'), generationNumber
-  setText document.getElementById('time'), (Math.floor cumulativeTime / 1000) + 's'
-  setText document.getElementById('speed'), Math.floor generationNumber / (cumulativeTime / 1000)
-  for key, val of attempts
-    percent = (Math.floor (successes[key] || 0) / val * 100) + '%'
-    fraction = (successes[key] || 0) + '/' + val
-    setText document.getElementById('success-' + key), fraction + ' (' + percent + ')'
+    window.dispatchEvent new CustomEvent 'svgImproved'
+  window.dispatchEvent new CustomEvent 'generationComplete'
   # save
   if generationNumber % 100 == 0
     sessionStorage.setItem storageKey, JSON.stringify paintings, stringifier
   # and repeat
   setTimeout breed, 0
-
-weightMap = null
 
 generateWeightMap = ->
   edgeMap = generateEdgeMap!
@@ -501,12 +486,9 @@ createBox = (cls) ->
   box.appendChild label
   return box
 
-window.addEventListener 'load', ->
+window.addEventListener 'load', !->
   boxesElement = document.getElementById('boxes')
   target = document.getElementById('target')
-  bestLarge = document.getElementById('best-large')
-  target.width = paintingWidth
-  target.height = paintingHeight
   i = 0
   for n in [1 to generationKeep]
     box = createBox 'survivor'
@@ -531,8 +513,6 @@ window.addEventListener 'load', ->
     else
       paintingHeight := Math.floor imageSource.height / imageSource.width * paintingBaseSize
       paintingWidth := paintingBaseSize
-    bestLarge.style.width = paintingWidth * 3 + 'px'
-    bestLarge.style.height = paintingHeight * 3 + 'px'
     target.width = paintingWidth
     target.height = paintingHeight
     ctx = target.getContext '2d'

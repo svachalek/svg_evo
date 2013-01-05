@@ -31,7 +31,7 @@ paintWeightMap = ->
     data[i++] = 255   # a
   ctx.putImageData imageData, 0, 0
 
-window.addEventListener 'load', ->
+window.addEventListener 'load', !->
   imageSource.onError = !->
     alert 'Failed to load the selected image. It is likely that the image server does not allow Cross-Origin Resource Sharing.'
 
@@ -66,9 +66,27 @@ window.addEventListener 'load', ->
   document.getElementById('restart').addEventListener 'click', restart
 
   imageSource.addEventListener 'load', !->
-    targetLarge = document.getElementById('target-large')
+    targetLarge = document.getElementById 'target-large'
+    bestLarge = document.getElementById 'best-large'
     targetLarge.src = imageSource.src
-    targetLarge.style.width = paintingWidth * 3 + 'px'
-    targetLarge.style.height = paintingHeight * 3 + 'px'
+    bestLarge.style.width = targetLarge.style.width = paintingWidth * 3 + 'px'
+    bestLarge.style.height = targetLarge.style.height = paintingHeight * 3 + 'px'
     paintWeightMap!
+
+window.addEventListener 'svgImproved', !->
+  # the base64 encoding shouldn't be necessary but Firefox can't handle the image otherwise
+  (document.getElementById 'best-large').src = 'data:image/svg+xml;base64,' + base64.encode paintings[showIndex].svg!
+  paintings[showIndex].paintDiffMap document.getElementById 'diff'
+
+window.addEventListener 'generationComplete', !->
+  for painting, i in paintings
+    painting.age = (painting.age || 0) + 1
+    painting.show survivorBoxes[i]
+  setText document.getElementById('generation'), generationNumber
+  setText document.getElementById('time'), (Math.floor cumulativeTime / 1000) + 's'
+  setText document.getElementById('speed'), Math.floor generationNumber / (cumulativeTime / 1000)
+  for key, val of attempts
+    percent = (Math.floor (successes[key] || 0) / val * 100) + '%'
+    fraction = (successes[key] || 0) + '/' + val
+    setText document.getElementById('success-' + key), fraction + ' (' + percent + ')'
 
