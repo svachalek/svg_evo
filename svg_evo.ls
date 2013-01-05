@@ -32,7 +32,8 @@ generationNumber = 0
 cumulativeTime = 0
 
 storageKey = null
-svgId = 0
+imageSource = null
+targetData = null
 showIndex = 0
 lastShownIndex = 0
 
@@ -61,7 +62,7 @@ randomSign = -> if Math.random! < 0.5 then -1 else 1
 clamp = (min, n, max) -> if n < min then min else if n > max then max else n
 plusOrMinus = (min, max) -> randomSign! * between max, min
 
-setText = (element, text) -> element.innerText = element.textContent = text
+setText = (element, text) -> if element then element.innerText = element.textContent = text
 
 diffPoint = (d, x1, y1, x2, y2) ->
   b1 = (x1 + (y1 * paintingWidth)) * 4
@@ -179,7 +180,8 @@ class Painting
     @diffMap = diffMap
 
   paintDiffMap: (canvas) ->
-    unless @diffMap then
+    return unless canvas
+    unless @diffMap
       @paint canvas
       @diffScore canvas
     canvas.width = paintingWidth
@@ -358,9 +360,6 @@ class Path
 
   cost: -> @points.length
 
-targetData = null
-bestData = null
-
 mutate = !->
   mutationRate = Math.max 1, 5 - (Math.floor (Math.log generationNumber) / Math.LN10)
   for i in [0 to generationMutate - 1]
@@ -434,7 +433,6 @@ generateWeightMap = ->
   while i < edgeMap.length
     weightMap.push clamp weightMin, edgeMap[i] + histoMap[i], 1
     i++
-  paintWeightMap!
 
 generateEdgeMap = ->
   edgeMap = []
@@ -484,22 +482,6 @@ generateHistoMap = ->
     histoMap.push clamp 0, 1 - rarity, 1
   return histoMap
 
-paintWeightMap = ->
-  weights = document.getElementById('weights')
-  weights.width = paintingWidth
-  weights.height = paintingHeight
-  ctx = weights.getContext '2d'
-  imageData = ctx.createImageData(paintingWidth, paintingHeight)
-  data = imageData.data
-  i = 0
-  for weight in weightMap
-    color = Math.floor (1 - weight) * 255
-    data[i++] = color # r
-    data[i++] = color # g
-    data[i++] = color # b
-    data[i++] = 255   # a
-  ctx.putImageData imageData, 0, 0
-
 resetStats = ->
   cumulativeTime := 0
   generationNumber := 0
@@ -522,7 +504,6 @@ createBox = (cls) ->
 window.addEventListener 'load', ->
   boxesElement = document.getElementById('boxes')
   target = document.getElementById('target')
-  targetLarge = document.getElementById('target-large')
   bestLarge = document.getElementById('best-large')
   target.width = paintingWidth
   target.height = paintingHeight
@@ -542,62 +523,28 @@ window.addEventListener 'load', ->
     boxesElement.appendChild box
     crossBoxes.push box
 
-  img = new Image!
-  img.addEventListener 'load', !->
-    targetLarge.src = img.src
-    if img.width > img.height
-      paintingWidth := Math.floor img.width / img.height * paintingBaseSize
+  imageSource := new Image!
+  imageSource.addEventListener 'load', !->
+    if imageSource.width > imageSource.height
+      paintingWidth := Math.floor imageSource.width / imageSource.height * paintingBaseSize
       paintingHeight := paintingBaseSize
     else
-      paintingHeight := Math.floor img.height / img.width * paintingBaseSize
+      paintingHeight := Math.floor imageSource.height / imageSource.width * paintingBaseSize
       paintingWidth := paintingBaseSize
-    bestLarge.style.width = targetLarge.style.width = paintingWidth * 3 + 'px'
-    bestLarge.style.height = targetLarge.style.height = paintingHeight * 3 + 'px'
+    bestLarge.style.width = paintingWidth * 3 + 'px'
+    bestLarge.style.height = paintingHeight * 3 + 'px'
     target.width = paintingWidth
     target.height = paintingHeight
     ctx = target.getContext '2d'
-    ctx.drawImage img, 0, 0, paintingWidth, paintingHeight
+    ctx.drawImage imageSource, 0, 0, paintingWidth, paintingHeight
     targetData := (ctx.getImageData 0, 0, paintingWidth, paintingHeight).data
     generateWeightMap!
-    storageKey := img.src
+    storageKey := imageSource.src
     if window.__proto__ && localStorage.getItem storageKey
       paintings := (JSON.parse localStorage.getItem(storageKey), reviver).concat(paintings).slice 0, generationKeep
       resetStats!
     else
       restart!
-    sessionStorage.setItem 'url', img.src
+    sessionStorage.setItem 'url', imageSource.src
     setTimeout breed, 0
-
-  img.onerror = !->
-    alert 'Failed to load the selected image. It is likely that the image server does not allow Cross-Origin Resource Sharing.'
-
-  imageSelect = document.getElementById 'imageSelect'
-  imageText = document.getElementById 'imageText'
-
-  if sessionStorage.getItem 'url'
-    imageSelect.selectedIndex = 0
-    imageText.value = sessionStorage.getItem 'url'
-  else
-    imageSelect.selectedIndex = between 1, imageSelect.options.length - 1
-    imageText.value = 'images/' + imageSelect.value
-
-  img.crossOrigin = ''
-  img.src = imageText.value
-  imageSelect.addEventListener 'change', ->
-    if imageSelect.selectedIndex > 0
-      imageText.value = img.src = 'images/' + imageSelect.value
-    else
-      imageText.value = ''
-      imageText.focus!
-
-  imageText.addEventListener 'change', ->
-    imageSelect.selectedIndex = 0
-    img.crossOrigin = ''
-    img.src = imageText.value
-
-  textureSelect = document.getElementById 'textureSelect'
-  textureSelect.addEventListener 'change', ->
-    bestLarge.style.backgroundImage = 'url(textures/' + textureSelect.value + ')'
-
-  document.getElementById('restart').addEventListener 'click', restart
 
