@@ -61,19 +61,6 @@ randomSign = -> if Math.random! < 0.5 then -1 else 1
 clamp = (min, n, max) -> if n < min then min else if n > max then max else n
 plusOrMinus = (min, max) -> randomSign! * between max, min
 
-format = (n) ->
-  if n < 0
-    n = -n
-    sign = '-'
-  else
-    sign = ''
-  if n >= 100
-    sign + Math.floor(n).toString!
-  else if n < 1
-    sign + n.toString!.slice(1,4)
-  else
-    sign + n.toString!.slice(0,4)
-
 setText = (element, text) -> element.innerText = element.textContent = text
 
 diffRGB = (dr, dg, db) -> Math.sqrt (dr * dr + dg * dg + db * db) / (3 * 255 * 255)
@@ -133,11 +120,11 @@ class Color
     child = new Color @r, @g, @b, @a
     switch between 1, 4
       when 1
-        child.r = Math.round clamp 0, @r + plusOrMinus(1, 16), 255
+        child.r = clamp 0, @r + plusOrMinus(1, 16), 255
       when 2
-        child.g = Math.round clamp 0, @g + plusOrMinus(1, 16), 255
+        child.g = clamp 0, @g + plusOrMinus(1, 16), 255
       when 3
-        child.b = Math.round clamp 0, @b + plusOrMinus(1, 16), 255
+        child.b = clamp 0, @b + plusOrMinus(1, 16), 255
       when 4
         child.a = clamp alphaMin, @a + plusOrMinus(1, 5), alphaMax
     return child
