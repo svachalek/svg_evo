@@ -321,19 +321,21 @@ class Path
 
   sort: !-> if radialSort then @points.sort (a, b) ~> a.angle(@center) - b.angle(@center)
 
-  randomPoint: -> between 0, @points.length - 1
-
   mutate: ->
-    roll = between 0, 7
+    roll = between 0, 9
     child = new Path this
-    if roll < 5
-      i = child.randomPoint!
+    if roll < 7
+      i = between 0, child.points.length - 1
       child.points[i] = child.points[i].mutate!
       child.sort!
-    else if roll < 6 && @points.length >= pointsMin + 2
-      child.points.splice child.randomPoint!, 1
-      child.points.splice child.randomPoint!, 1
-    else if roll < 7
+    else if roll < 8 && @points.length >= pointsMin + 2
+      i = between 0, child.points.length / 2 - 1
+      child.points.splice i * 2, 1
+      if i == 0
+        child.points.pop!
+      else
+        child.points.splice i * 2 - 1, 1
+    else if roll < 9
       child.center = child.center.mutate!
       child.sort!
     else
