@@ -1,4 +1,4 @@
-var paintingBaseSize, testScale, costScoreRatio, diffMapSensitivity, weightMin, radialSort, alphaMin, alphaMax, pointsMin, generationKeep, generationMutate, generationCross, generationNumber, cumulativeTime, storageKey, imageSource, target, targetData, weightMap, showIndex, lastShownIndex, paintingWidth, paintingHeight, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, mutate, crossover, breed, generateWeightMap, generateEdgeMap, generateHistoMap, resetStats, restart, createBox, scalePaintings;
+var paintingBaseSize, testScale, costScoreRatio, diffMapSensitivity, weightMin, radialSort, alphaMin, alphaMax, pointsMin, generationKeep, generationMutate, generationCross, generationNumber, cumulativeTime, storageKey, imageSource, target, targetData, weightMap, showIndex, lastShownIndex, paintingWidth, paintingHeight, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, onSvgImproved, onGenerationComplete, onScalePaintings, attempt, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, mutate, crossover, breed, generateWeightMap, generateEdgeMap, generateHistoMap, resetStats, restart, createBox, scalePaintings;
 paintingBaseSize = 100;
 testScale = 1;
 costScoreRatio = 0.002;
@@ -28,6 +28,9 @@ mutantBoxes = [];
 crossBoxes = [];
 attempts = {};
 successes = {};
+onSvgImproved = function(){};
+onGenerationComplete = function(){};
+onScalePaintings = function(){};
 attempt = function(types, success){
   var i$, len$, type, results$ = [];
   for (i$ = 0, len$ = types.length; i$ < len$; ++i$) {
@@ -185,6 +188,7 @@ Painting = (function(){
   prototype.randomize = function(){
     this.shapes = [new Shape()];
     this.origin = ['random'];
+    this.score = 1 / 0;
     return this;
   };
   prototype.paint = function(canvas, opaque){
@@ -520,9 +524,9 @@ breed = function(){
   cumulativeTime = cumulativeTime + Date.now() - startTime;
   if (showIndex !== lastShownIndex || paintings[showIndex] !== previousPaintings[showIndex]) {
     lastShownIndex = showIndex;
-    window.dispatchEvent(new CustomEvent('svgImproved'));
+    onSvgImproved();
   }
-  window.dispatchEvent(new CustomEvent('generationComplete'));
+  onGenerationComplete();
   if (generationNumber % 100 === 0) {
     sessionStorage.setItem(storageKey, JSON.stringify(paintings, stringifier));
   }
@@ -637,7 +641,7 @@ scalePaintings = function(){
   ctx.drawImage(imageSource, 0, 0, target.width, target.height);
   targetData = ctx.getImageData(0, 0, target.width, target.height).data;
   generateWeightMap();
-  return window.dispatchEvent(new CustomEvent('scalePaintings'));
+  return onScalePaintings();
 };
 window.addEventListener('load', function(){
   var boxesElement, i, i$, ref$, len$, n, box;

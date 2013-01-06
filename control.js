@@ -1,4 +1,4 @@
-var paintWeightMap;
+var paintWeightMap, onScalePaintings, onSvgImproved, onGenerationComplete;
 paintWeightMap = function(){
   var weights, ctx, imageData, data, i, i$, ref$, len$, weight, color;
   weights = document.getElementById('weights');
@@ -62,12 +62,21 @@ window.addEventListener('load', function(){
     bestLarge.style.height = targetLarge.style.height = paintingHeight * 3 + 'px';
   });
 });
-window.addEventListener('scalePaintings', paintWeightMap);
-window.addEventListener('svgImproved', function(){
+onScalePaintings = function(){
+  var i$, ref$, len$, i, painting;
+  paintWeightMap();
+  for (i$ = 0, len$ = (ref$ = paintings).length; i$ < len$; ++i$) {
+    i = i$;
+    painting = ref$[i$];
+    painting.canvas = null;
+    painting.show(survivorBoxes[i]);
+  }
+};
+onSvgImproved = function(){
   document.getElementById('best-large').src = 'data:image/svg+xml;base64,' + base64.encode(paintings[showIndex].svg());
   paintings[showIndex].paintDiffMap(document.getElementById('diff'));
-});
-window.addEventListener('generationComplete', function(){
+};
+onGenerationComplete = function(){
   var i$, ref$, len$, i, painting, key, val, percent, fraction;
   for (i$ = 0, len$ = (ref$ = paintings).length; i$ < len$; ++i$) {
     i = i$;
@@ -84,4 +93,4 @@ window.addEventListener('generationComplete', function(){
     fraction = (successes[key] || 0) + '/' + val;
     setText(document.getElementById('success-' + key), fraction + ' (' + percent + ')');
   }
-});
+};
