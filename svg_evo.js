@@ -1,5 +1,6 @@
-var paintingBaseSize, costScoreRatio, diffMapSensitivity, weightMin, radialSort, alphaMin, alphaMax, pointsMin, generationKeep, generationMutate, generationCross, generationNumber, cumulativeTime, storageKey, svgId, showIndex, lastShownIndex, paintingWidth, paintingHeight, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, targetData, bestData, mutate, crossover, breed, weightMap, generateWeightMap, generateEdgeMap, generateHistoMap, paintWeightMap, resetStats, restart, createBox;
+var paintingBaseSize, testScale, costScoreRatio, diffMapSensitivity, weightMin, radialSort, alphaMin, alphaMax, pointsMin, generationKeep, generationMutate, generationCross, generationNumber, cumulativeTime, storageKey, imageSource, target, targetData, weightMap, showIndex, lastShownIndex, paintingWidth, paintingHeight, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, attempt, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, mutate, crossover, breed, generateWeightMap, generateEdgeMap, generateHistoMap, resetStats, restart, createBox, scalePaintings;
 paintingBaseSize = 100;
+testScale = 1;
 costScoreRatio = 0.002;
 diffMapSensitivity = 0x4000;
 weightMin = 0.02;
@@ -12,8 +13,11 @@ generationMutate = 15;
 generationCross = 1;
 generationNumber = 0;
 cumulativeTime = 0;
-storageKey = null;
-svgId = 0;
+storageKey = 'paintings';
+imageSource = null;
+target = null;
+targetData = null;
+weightMap = null;
 showIndex = 0;
 lastShownIndex = 0;
 paintingWidth = paintingBaseSize;
@@ -71,8 +75,8 @@ setText = function(element, text){
 };
 diffPoint = function(d, x1, y1, x2, y2){
   var b1, b2, dr, dg, db;
-  b1 = (x1 + y1 * paintingWidth) * 4;
-  b2 = (x2 + y2 * paintingWidth) * 4;
+  b1 = (x1 + y1 * target.width) * 4;
+  b2 = (x2 + y2 * target.width) * 4;
   dr = d[b1++] - d[b2++];
   dg = d[b1++] - d[b2++];
   db = d[b1++] - d[b2++];
@@ -183,13 +187,13 @@ Painting = (function(){
     this.origin = ['random'];
     return this;
   };
-  prototype.paint = function(canvas, scale, opaque){
+  prototype.paint = function(canvas, opaque){
     var ctx, i$, ref$, len$, shape;
-    canvas.width = paintingWidth * scale;
-    canvas.height = paintingHeight * scale;
+    canvas.width = target.width;
+    canvas.height = target.height;
     ctx = canvas.getContext('2d');
     ctx.save();
-    ctx.scale(scale, scale);
+    ctx.scale(canvas.width / paintingWidth, canvas.height / paintingHeight);
     if (opaque) {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, paintingWidth, paintingHeight);
@@ -206,7 +210,7 @@ Painting = (function(){
     var canvas, label;
     canvas = box.children[0];
     if (this.canvas !== canvas) {
-      this.paint(canvas, 1, true);
+      this.paint(canvas, true);
       this.diffScore(canvas);
       this.canvas = canvas;
     }
@@ -218,7 +222,7 @@ Painting = (function(){
     ctx = canvas.getContext('2d');
     score = 0;
     diffMap = new Array(weightMap.length);
-    data = ctx.getImageData(0, 0, paintingWidth, paintingHeight).data;
+    data = ctx.getImageData(0, 0, target.width, target.height).data;
     i = w = 0;
     l = data.length;
     while (i < l) {
@@ -230,7 +234,7 @@ Painting = (function(){
       diffMap[w] = diff;
       score += diff * weightMap[w++];
     }
-    this.score = score / (paintingWidth * paintingHeight) + this.cost() * costScoreRatio;
+    this.score = score / (target.width * target.height) + this.cost() * costScoreRatio;
     return this.diffMap = diffMap;
   };
   prototype.paintDiffMap = function(canvas){
@@ -239,10 +243,10 @@ Painting = (function(){
       this.paint(canvas);
       this.diffScore(canvas);
     }
-    canvas.width = paintingWidth;
-    canvas.height = paintingHeight;
+    canvas.width = target.width;
+    canvas.height = target.height;
     ctx = canvas.getContext('2d');
-    diffData = ctx.createImageData(paintingWidth, paintingHeight);
+    diffData = ctx.createImageData(target.width, target.height);
     data = diffData.data;
     i = 0;
     for (i$ = 0, len$ = (ref$ = this.diffMap).length; i$ < len$; ++i$) {
@@ -451,8 +455,6 @@ Path = (function(){
   };
   return Path;
 }());
-targetData = null;
-bestData = null;
 mutate = function(){
   var mutationRate, i$, ref$, len$, i, n, child, mom, j;
   mutationRate = Math.max(1, 5 - Math.floor(Math.log(generationNumber) / Math.LN10));
@@ -509,40 +511,23 @@ crossover = function(){
   }
 };
 breed = function(){
-  var startTime, previousPaintings, lastShownIndex, best, i$, ref$, len$, i, painting, key, val, percent, fraction;
+  var startTime, previousPaintings, lastShownIndex;
   startTime = Date.now();
   ++generationNumber;
   previousPaintings = paintings.slice(0);
   mutate();
   crossover();
+  cumulativeTime = cumulativeTime + Date.now() - startTime;
   if (showIndex !== lastShownIndex || paintings[showIndex] !== previousPaintings[showIndex]) {
     lastShownIndex = showIndex;
-    document.getElementById('best-large').src = 'data:image/svg+xml;base64,' + base64.encode(paintings[showIndex].svg());
-    paintings[showIndex].paintDiffMap(document.getElementById('diff'));
+    window.dispatchEvent(new CustomEvent('svgImproved'));
   }
-  best = paintings[0];
-  for (i$ = 0, len$ = (ref$ = paintings).length; i$ < len$; ++i$) {
-    i = i$;
-    painting = ref$[i$];
-    painting.age = (painting.age || 0) + 1;
-    painting.show(survivorBoxes[i]);
-  }
-  cumulativeTime += Date.now() - startTime;
-  setText(document.getElementById('generation'), generationNumber);
-  setText(document.getElementById('time'), Math.floor(cumulativeTime / 1000) + 's');
-  setText(document.getElementById('speed'), Math.floor(generationNumber / (cumulativeTime / 1000)));
-  for (key in ref$ = attempts) {
-    val = ref$[key];
-    percent = Math.floor((successes[key] || 0) / val * 100) + '%';
-    fraction = (successes[key] || 0) + '/' + val;
-    setText(document.getElementById('success-' + key), fraction + ' (' + percent + ')');
-  }
+  window.dispatchEvent(new CustomEvent('generationComplete'));
   if (generationNumber % 100 === 0) {
-    localStorage.setItem(storageKey, JSON.stringify(paintings, stringifier));
+    sessionStorage.setItem(storageKey, JSON.stringify(paintings, stringifier));
   }
   setTimeout(breed, 0);
 };
-weightMap = null;
 generateWeightMap = function(){
   var edgeMap, histoMap, i;
   edgeMap = generateEdgeMap();
@@ -553,19 +538,18 @@ generateWeightMap = function(){
     weightMap.push(clamp(weightMin, edgeMap[i] + histoMap[i], 1));
     i++;
   }
-  return paintWeightMap();
 };
 generateEdgeMap = function(){
   var edgeMap, y, x, u, l, r, d, edge;
   edgeMap = [];
   y = 0;
-  while (y < paintingHeight) {
+  while (y < target.height) {
     x = 0;
-    while (x < paintingWidth) {
+    while (x < target.width) {
       u = Math.max(y - 1, 0);
       l = Math.max(x - 1, 0);
-      r = Math.min(x + 1, paintingWidth - 1);
-      d = Math.min(y + 1, paintingHeight - 1);
+      r = Math.min(x + 1, target.width - 1);
+      d = Math.min(y + 1, target.height - 1);
       edge = diffPoint(targetData, x, y, l, u) + diffPoint(targetData, x, y, x, u) + diffPoint(targetData, x, y, r, u) + diffPoint(targetData, x, y, l, y) + diffPoint(targetData, x, y, r, y) + diffPoint(targetData, x, y, l, d) + diffPoint(targetData, x, y, x, d) + diffPoint(targetData, x, y, r, d);
       edgeMap.push(clamp(0, edge / 4, 1));
       ++x;
@@ -598,29 +582,10 @@ generateHistoMap = function(){
     b = targetData[i++];
     a = targetData[i++];
     color = (r >> 5) << 6 | (g >> 5) << 3 | b >> 5;
-    rarity = histogram[color] / (paintingWidth * paintingHeight) * histogram.length;
+    rarity = histogram[color] / (target.width * target.height) * histogram.length;
     histoMap.push(clamp(0, 1 - rarity, 1));
   }
   return histoMap;
-};
-paintWeightMap = function(){
-  var weights, ctx, imageData, data, i, i$, ref$, len$, weight, color;
-  weights = document.getElementById('weights');
-  weights.width = paintingWidth;
-  weights.height = paintingHeight;
-  ctx = weights.getContext('2d');
-  imageData = ctx.createImageData(paintingWidth, paintingHeight);
-  data = imageData.data;
-  i = 0;
-  for (i$ = 0, len$ = (ref$ = weightMap).length; i$ < len$; ++i$) {
-    weight = ref$[i$];
-    color = Math.floor((1 - weight) * 255);
-    data[i++] = color;
-    data[i++] = color;
-    data[i++] = color;
-    data[i++] = 255;
-  }
-  return ctx.putImageData(imageData, 0, 0);
 };
 resetStats = function(){
   cumulativeTime = 0;
@@ -657,14 +622,27 @@ createBox = function(cls){
   box.appendChild(label);
   return box;
 };
+scalePaintings = function(){
+  var ctx;
+  if (imageSource.width > imageSource.height) {
+    paintingWidth = Math.floor(imageSource.width / imageSource.height * paintingBaseSize);
+    paintingHeight = paintingBaseSize;
+  } else {
+    paintingHeight = Math.floor(imageSource.height / imageSource.width * paintingBaseSize);
+    paintingWidth = paintingBaseSize;
+  }
+  target.width = paintingWidth * testScale;
+  target.height = paintingHeight * testScale;
+  ctx = target.getContext('2d');
+  ctx.drawImage(imageSource, 0, 0, target.width, target.height);
+  targetData = ctx.getImageData(0, 0, target.width, target.height).data;
+  generateWeightMap();
+  return window.dispatchEvent(new CustomEvent('scalePaintings'));
+};
 window.addEventListener('load', function(){
-  var boxesElement, target, targetLarge, bestLarge, i, i$, ref$, len$, n, box, img, imageSelect, imageText, textureSelect;
+  var boxesElement, i, i$, ref$, len$, n, box;
   boxesElement = document.getElementById('boxes');
   target = document.getElementById('target');
-  targetLarge = document.getElementById('target-large');
-  bestLarge = document.getElementById('best-large');
-  target.width = paintingWidth;
-  target.height = paintingHeight;
   i = 0;
   for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
     n = ref$[i$];
@@ -686,67 +664,17 @@ window.addEventListener('load', function(){
     boxesElement.appendChild(box);
     crossBoxes.push(box);
   }
-  img = new Image();
-  img.addEventListener('load', function(){
-    var ctx;
-    targetLarge.src = img.src;
-    if (img.width > img.height) {
-      paintingWidth = Math.floor(img.width / img.height * paintingBaseSize);
-      paintingHeight = paintingBaseSize;
-    } else {
-      paintingHeight = Math.floor(img.height / img.width * paintingBaseSize);
-      paintingWidth = paintingBaseSize;
-    }
-    bestLarge.style.width = targetLarge.style.width = paintingWidth * 3 + 'px';
-    bestLarge.style.height = targetLarge.style.height = paintingHeight * 3 + 'px';
-    target.width = paintingWidth;
-    target.height = paintingHeight;
-    ctx = target.getContext('2d');
-    ctx.drawImage(img, 0, 0, paintingWidth, paintingHeight);
-    targetData = ctx.getImageData(0, 0, paintingWidth, paintingHeight).data;
-    generateWeightMap();
-    storageKey = img.src;
-    if (window.__proto__ && localStorage.getItem(storageKey)) {
-      paintings = JSON.parse(localStorage.getItem(storageKey), reviver).concat(paintings).slice(0, generationKeep);
+  imageSource = new Image();
+  imageSource.addEventListener('load', function(){
+    scalePaintings();
+    if (window.__proto__ && sessionStorage.getItem(storageKey)) {
+      paintings = JSON.parse(sessionStorage.getItem(storageKey), reviver).concat(paintings).slice(0, generationKeep);
       resetStats();
     } else {
       restart();
     }
-    sessionStorage.setItem('url', img.src);
     setTimeout(breed, 0);
   });
-  img.onerror = function(){
-    alert('Failed to load the selected image. It is likely that the image server does not allow Cross-Origin Resource Sharing.');
-  };
-  imageSelect = document.getElementById('imageSelect');
-  imageText = document.getElementById('imageText');
-  if (sessionStorage.getItem('url')) {
-    imageSelect.selectedIndex = 0;
-    imageText.value = sessionStorage.getItem('url');
-  } else {
-    imageSelect.selectedIndex = between(1, imageSelect.options.length - 1);
-    imageText.value = 'images/' + imageSelect.value;
-  }
-  img.crossOrigin = '';
-  img.src = imageText.value;
-  imageSelect.addEventListener('change', function(){
-    if (imageSelect.selectedIndex > 0) {
-      return imageText.value = img.src = 'images/' + imageSelect.value;
-    } else {
-      imageText.value = '';
-      return imageText.focus();
-    }
-  });
-  imageText.addEventListener('change', function(){
-    imageSelect.selectedIndex = 0;
-    img.crossOrigin = '';
-    return img.src = imageText.value;
-  });
-  textureSelect = document.getElementById('textureSelect');
-  textureSelect.addEventListener('change', function(){
-    return bestLarge.style.backgroundImage = 'url(textures/' + textureSelect.value + ')';
-  });
-  return document.getElementById('restart').addEventListener('click', restart);
   function fn$(){
     var i$, to$, results$ = [];
     for (i$ = 1, to$ = generationKeep; i$ <= to$; ++i$) {
