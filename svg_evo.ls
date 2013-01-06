@@ -137,6 +137,7 @@ class Painting
   randomize: ->
     @shapes = [new Shape!]
     @origin = ['random']
+    @score = 1/0 # infinity
     return this
 
   paint: !(canvas, opaque) ->
