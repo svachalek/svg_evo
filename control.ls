@@ -92,7 +92,7 @@ onGenerationComplete = !->
   setText document.getElementById('time'), (Math.floor cumulativeTime / 1000) + 's'
   setText document.getElementById('speed'), Math.floor generationNumber / (cumulativeTime / 1000)
   for key, val of attempts
-    percent = (Math.floor (successes[key] || 0) / val * 100) + '%'
+    percent = ((successes[key] || 0) / val * 100).toFixed(2) + '%'
     fraction = (successes[key] || 0) + '/' + val
     setText document.getElementById('success-' + key), fraction + ' (' + percent + ')'
 

@@ -55,11 +55,18 @@ onSvgImproved = ->
 onGenerationComplete = ->
 onScalePaintings = ->
 
-attempt = (types, success) ->
-  for type in types
-    attempts[type] = (attempts[type] || 0) + 1
-    if success
-      successes[type] = (successes[type] || 0) + 1
+attempted = []
+
+attempt = !(type) ->
+  attempts[type] = (attempts[type] || 0) + 1
+  attempted.push type
+
+failure = !->
+  attempted := []
+success = !->
+  for type in attempted
+    successes[type] = (successes[type] || 0) + 1
+  attempted := []
 
 between = (min, max) -> Math.floor (Math.random! * (max - min + 1) + min)
 betweenHigh = (min, max) -> Math.floor (Math.sin(Math.random! * Math.PI / 2) * (max - min + 1) + min)
@@ -128,20 +135,23 @@ class Color
     switch between 1, 4
       when 1
         child.r = clamp 0, @r + plusOrMinus(1, 16), 255
+        attempt 'rgb'
       when 2
         child.g = clamp 0, @g + plusOrMinus(1, 16), 255
+        attempt 'rgb'
       when 3
         child.b = clamp 0, @b + plusOrMinus(1, 16), 255
+        attempt 'rgb'
       when 4
         child.a = clamp alphaMin, @a + plusOrMinus(1, 5), alphaMax
+        attempt 'alpha'
     return child
 
 class Painting
-  (shapes, @origin = []) -> if shapes then @shapes = shapes.slice(0) else @randomize!
+  (shapes) -> if shapes then @shapes = shapes.slice(0) else @randomize!
 
   randomize: ->
     @shapes = [new Shape!]
-    @origin = ['random']
     @score = 1/0 # infinity
     return this
 
@@ -210,14 +220,14 @@ class Painting
     child = new Painting @shapes
     roll = between 0, 99
     if roll < 1 && @shapes.length > 1
-      child.origin.push 'remove'
+      attempt 'remove-shape'
       i = betweenHigh 0, @shapes.length - 1
       child.shapes.splice i, 1
     else if roll < 2
-      child.origin.push 'add'
+      attempt 'add-shape'
       child.shapes.push new Shape!
     else if roll < 5 && @shapes.length >= 2
-      child.origin.push 'order'
+      attempt 'reorder-shapes'
       i = betweenHigh 0, @shapes.length - 2 # not the last
       tmp = @shapes[i]
       child.shapes[i] = @shapes[i + 1]
@@ -225,7 +235,6 @@ class Painting
     else
       i = betweenHigh 0, @shapes.length - 1
       child.shapes[i] = @shapes[i].mutate!
-      child.origin.push child.shapes[i].origin
     return child
 
   cross: (other) ->
@@ -233,7 +242,8 @@ class Painting
     i = between (Math.round len / 4), len
     j = i + between (Math.round len / 4), len * 3/4
     shapes = (@shapes.slice 0, i).concat(other.shapes.slice i, j).concat(@shapes.slice(j))
-    new Painting shapes, ['cross']
+    attempt 'crossover'
+    new Painting shapes
 
   svg: ->
     w = paintingWidth
@@ -286,10 +296,8 @@ class Shape
     child = new Shape this
     if roll > 0
       child.path = @path.mutate!
-      child.origin = 'shape'
     else
       child.color = @color.mutate!
-      child.origin = 'color'
     return child
 
   svgGradient: (gradientId)  ->
@@ -338,6 +346,7 @@ class Path
       i = between 0, child.points.length - 1
       child.points[i] = child.points[i].mutate!
       child.sort!
+      attempt 'move-point'
     else if roll < 8 && @points.length >= pointsMin + 2
       i = between 0, child.points.length / 2 - 1
       child.points.splice i * 2, 1
@@ -345,14 +354,17 @@ class Path
         child.points.pop!
       else
         child.points.splice i * 2 - 1, 1
+      attempt 'remove-point'
     else if roll < 9
       child.center = child.center.mutate!
       child.sort!
+      attempt 'move-center'
     else
       p = new Point!
       child.points.push p
       child.points.push p.mutate!
       child.sort!
+      attempt 'add-point'
     return child
 
   svg: ->
@@ -379,9 +391,9 @@ mutate = !->
     child.show mutantBoxes[i]
     if child.score < mom.score
       paintings[n] = child
-      attempt child.origin, true
+      success!
     else
-      attempt child.origin, false
+      failure!
 
 crossover = !->
   for i in [0 to generationCross - 1]
@@ -395,9 +407,9 @@ crossover = !->
     child.show crossBoxes[i]
     if child.score < mom.score && child.score < dad.score
       paintings[if mom.score < dad.score then d else m] = child
-      attempt child.origin, true
+      success!
     else
-      attempt child.origin, false
+      failure!
 
 breed = !->
   startTime = Date.now!
