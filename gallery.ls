@@ -22,6 +22,9 @@ imgs =
   },{
     o:   'images/MonaLisaFace.jpg',
     svg: 'MonaLisaFace-100k.svg'
+  },{
+    o:   'images/AmericanGothic.jpg',
+    svg: 'AmericanGothic-200k.svg'
   /*
   },{
     o:   'https://lh3.googleusercontent.com/-VqbjDm2twT4/SxBj8kbEugI/AAAAAAAABWA/nmnZw0hFaF0/s572/Picture+006.jpg',
