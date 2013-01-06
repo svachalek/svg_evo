@@ -27,7 +27,7 @@ alphaMax = 60
 pointsMin = 6
 
 generationKeep = 4
-generationMutate = 15
+generationMutate = 16
 generationCross = 1
 generationNumber = 0
 cumulativeTime = 0
@@ -383,7 +383,7 @@ class Path
 mutate = !->
   mutationRate = Math.max 1, 5 - (Math.floor (Math.log generationNumber) / Math.LN10)
   for i in [0 to generationMutate - 1]
-    n = randomPainting!
+    n = i % paintings.length
     child = mom = paintings[n]
     j = 0
     while j++ < mutationRate
