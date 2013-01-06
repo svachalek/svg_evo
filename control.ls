@@ -73,18 +73,18 @@ window.addEventListener 'load', !->
     bestLarge.style.width = targetLarge.style.width = paintingWidth * 3 + 'px'
     bestLarge.style.height = targetLarge.style.height = paintingHeight * 3 + 'px'
 
-window.addEventListener 'scalePaintings', !->
+onScalePaintings = !->
   paintWeightMap!
   for painting, i in paintings
     painting.canvas = null
     painting.show survivorBoxes[i]
 
-window.addEventListener 'svgImproved', !->
+onSvgImproved = !->
   # the base64 encoding shouldn't be necessary but Firefox can't handle the image otherwise
   (document.getElementById 'best-large').src = 'data:image/svg+xml;base64,' + base64.encode paintings[showIndex].svg!
   paintings[showIndex].paintDiffMap document.getElementById 'diff'
 
-window.addEventListener 'generationComplete', !->
+onGenerationComplete = !->
   for painting, i in paintings
     painting.age = (painting.age || 0) + 1
     painting.show survivorBoxes[i]

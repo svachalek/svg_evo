@@ -50,6 +50,11 @@ crossBoxes = []
 attempts = {}
 successes = {}
 
+# event handlers
+onSvgImproved = ->
+onGenerationComplete = ->
+onScalePaintings = ->
+
 attempt = (types, success) ->
   for type in types
     attempts[type] = (attempts[type] || 0) + 1
@@ -405,8 +410,8 @@ breed = !->
   # show the best
   if showIndex != lastShownIndex || paintings[showIndex] != previousPaintings[showIndex]
     lastShownIndex = showIndex
-    window.dispatchEvent new CustomEvent 'svgImproved'
-  window.dispatchEvent new CustomEvent 'generationComplete'
+    onSvgImproved!
+  onGenerationComplete!
   # save
   if generationNumber % 100 == 0
     sessionStorage.setItem storageKey, JSON.stringify paintings, stringifier
@@ -502,7 +507,7 @@ scalePaintings = ->
   ctx.drawImage imageSource, 0, 0, target.width, target.height
   targetData := (ctx.getImageData 0, 0, target.width, target.height).data
   generateWeightMap!
-  window.dispatchEvent new CustomEvent 'scalePaintings'
+  onScalePaintings!
 
 window.addEventListener 'load', !->
   boxesElement = document.getElementById('boxes')
