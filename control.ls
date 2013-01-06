@@ -73,7 +73,11 @@ window.addEventListener 'load', !->
     bestLarge.style.width = targetLarge.style.width = paintingWidth * 3 + 'px'
     bestLarge.style.height = targetLarge.style.height = paintingHeight * 3 + 'px'
 
-window.addEventListener 'scalePaintings', paintWeightMap
+window.addEventListener 'scalePaintings', !->
+  paintWeightMap!
+  for painting, i in paintings
+    painting.canvas = null
+    painting.show survivorBoxes[i]
 
 window.addEventListener 'svgImproved', !->
   # the base64 encoding shouldn't be necessary but Firefox can't handle the image otherwise
