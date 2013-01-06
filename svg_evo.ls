@@ -16,6 +16,7 @@
 # along with SVGDNA.  If not, see <http://www.gnu.org/licenses/>
 
 paintingBaseSize = 100
+testScale = 1
 costScoreRatio = 0.002
 diffMapSensitivity = 0x4000
 weightMin = 0.02
@@ -33,6 +34,7 @@ cumulativeTime = 0
 
 storageKey = 'paintings'
 imageSource = null
+target = null
 targetData = null
 weightMap = null
 showIndex = 0
@@ -66,8 +68,8 @@ plusOrMinus = (min, max) -> randomSign! * between max, min
 setText = (element, text) -> element.innerText = element.textContent = text
 
 diffPoint = (d, x1, y1, x2, y2) ->
-  b1 = (x1 + (y1 * paintingWidth)) * 4
-  b2 = (x2 + (y2 * paintingWidth)) * 4
+  b1 = (x1 + (y1 * target.width)) * 4
+  b2 = (x2 + (y2 * target.width)) * 4
   dr = d[b1++] - d[b2++]
   dg = d[b1++] - d[b2++]
   db = d[b1++] - d[b2++]
@@ -137,12 +139,12 @@ class Painting
     @origin = ['random']
     return this
 
-  paint: !(canvas, scale, opaque) ->
-    canvas.width = paintingWidth * scale
-    canvas.height = paintingHeight * scale
+  paint: !(canvas, opaque) ->
+    canvas.width = target.width
+    canvas.height = target.height
     ctx = canvas.getContext '2d'
     ctx.save!
-    ctx.scale scale, scale
+    ctx.scale canvas.width / paintingWidth, canvas.height / paintingHeight
     if opaque
       # lay down an opaque white, a clear background looks white but compares black
       ctx.fillStyle = '#ffffff'
@@ -156,7 +158,7 @@ class Painting
   show: (box) ->
     canvas = box.children[0]
     unless @canvas == canvas then
-      @paint canvas, 1, true
+      @paint canvas, true
       @diffScore canvas
       @canvas = canvas
     label = 'Score: ' + Math.floor(@score) + (if @age then ' Age: ' + @age else '')
@@ -166,7 +168,7 @@ class Painting
     ctx = canvas.getContext '2d'
     score = 0
     diffMap = new Array weightMap.length
-    data = (ctx.getImageData 0, 0, paintingWidth, paintingHeight).data
+    data = (ctx.getImageData 0, 0, target.width, target.height).data
     i = w = 0
     l = data.length
     while i < l
@@ -177,17 +179,17 @@ class Painting
       diff = dr * dr + dg * dg + db * db
       diffMap[w] = diff
       score += diff * weightMap[w++]
-    @score = score / (paintingWidth * paintingHeight) + @cost! * costScoreRatio
+    @score = score / (target.width * target.height) + @cost! * costScoreRatio
     @diffMap = diffMap
 
   paintDiffMap: (canvas) ->
     unless @diffMap
       @paint canvas
       @diffScore canvas
-    canvas.width = paintingWidth
-    canvas.height = paintingHeight
+    canvas.width = target.width
+    canvas.height = target.height
     ctx = canvas.getContext '2d'
-    diffData = ctx.createImageData paintingWidth, paintingHeight
+    diffData = ctx.createImageData target.width, target.height
     data = diffData.data
     i = 0
     for point in @diffMap
@@ -410,7 +412,7 @@ breed = !->
   # and repeat
   setTimeout breed, 0
 
-generateWeightMap = ->
+generateWeightMap = !->
   edgeMap = generateEdgeMap!
   histoMap = generateHistoMap!
   i = 0
@@ -422,13 +424,13 @@ generateWeightMap = ->
 generateEdgeMap = ->
   edgeMap = []
   y = 0
-  while y < paintingHeight
+  while y < target.height
     x = 0
-    while x < paintingWidth
+    while x < target.width
       u = Math.max y - 1, 0
       l = Math.max x - 1, 0
-      r = Math.min x + 1, paintingWidth - 1
-      d = Math.min y + 1, paintingHeight - 1
+      r = Math.min x + 1, target.width - 1
+      d = Math.min y + 1, target.height - 1
       edge = (
         diffPoint(targetData, x, y, l, u) +
         diffPoint(targetData, x, y, x, u) +
@@ -463,7 +465,7 @@ generateHistoMap = ->
     b = targetData[i++]
     a = targetData[i++]
     color = (r .>>. 5) .<<. 6 .|. (g .>>. 5) .<<. 3 .|. (b .>>. 5)
-    rarity = histogram[color] / (paintingWidth * paintingHeight) * histogram.length
+    rarity = histogram[color] / (target.width * target.height) * histogram.length
     histoMap.push clamp 0, 1 - rarity, 1
   return histoMap
 
@@ -486,9 +488,24 @@ createBox = (cls) ->
   box.appendChild label
   return box
 
+scalePaintings = ->
+  if imageSource.width > imageSource.height
+    paintingWidth := Math.floor imageSource.width / imageSource.height * paintingBaseSize
+    paintingHeight := paintingBaseSize
+  else
+    paintingHeight := Math.floor imageSource.height / imageSource.width * paintingBaseSize
+    paintingWidth := paintingBaseSize
+  target.width = paintingWidth * testScale
+  target.height = paintingHeight * testScale
+  ctx = target.getContext '2d'
+  ctx.drawImage imageSource, 0, 0, target.width, target.height
+  targetData := (ctx.getImageData 0, 0, target.width, target.height).data
+  generateWeightMap!
+  window.dispatchEvent new CustomEvent 'scalePaintings'
+
 window.addEventListener 'load', !->
   boxesElement = document.getElementById('boxes')
-  target = document.getElementById('target')
+  target := document.getElementById('target')
   i = 0
   for n in [1 to generationKeep]
     box = createBox 'survivor'
@@ -507,18 +524,7 @@ window.addEventListener 'load', !->
 
   imageSource := new Image!
   imageSource.addEventListener 'load', !->
-    if imageSource.width > imageSource.height
-      paintingWidth := Math.floor imageSource.width / imageSource.height * paintingBaseSize
-      paintingHeight := paintingBaseSize
-    else
-      paintingHeight := Math.floor imageSource.height / imageSource.width * paintingBaseSize
-      paintingWidth := paintingBaseSize
-    target.width = paintingWidth
-    target.height = paintingHeight
-    ctx = target.getContext '2d'
-    ctx.drawImage imageSource, 0, 0, paintingWidth, paintingHeight
-    targetData := (ctx.getImageData 0, 0, paintingWidth, paintingHeight).data
-    generateWeightMap!
+    scalePaintings!
     if window.__proto__ && sessionStorage.getItem storageKey
       paintings := (JSON.parse sessionStorage.getItem(storageKey), reviver).concat(paintings).slice 0, generationKeep
       resetStats!

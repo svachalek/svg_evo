@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with SVGDNA.  If not, see <http://www.gnu.org/licenses/>
 
-paintWeightMap = ->
+paintWeightMap = !->
   weights = document.getElementById('weights')
-  weights.width = paintingWidth
-  weights.height = paintingHeight
+  weights.width = target.width
+  weights.height = target.height
   ctx = weights.getContext '2d'
-  imageData = ctx.createImageData(paintingWidth, paintingHeight)
+  imageData = ctx.createImageData(target.width, target.height)
   data = imageData.data
   i = 0
   for weight in weightMap
@@ -71,7 +71,8 @@ window.addEventListener 'load', !->
     targetLarge.src = imageSource.src
     bestLarge.style.width = targetLarge.style.width = paintingWidth * 3 + 'px'
     bestLarge.style.height = targetLarge.style.height = paintingHeight * 3 + 'px'
-    paintWeightMap!
+
+window.addEventListener 'scalePaintings', paintWeightMap
 
 window.addEventListener 'svgImproved', !->
   # the base64 encoding shouldn't be necessary but Firefox can't handle the image otherwise
