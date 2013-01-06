@@ -66,6 +66,7 @@ window.addEventListener 'load', !->
   document.getElementById('restart').addEventListener 'click', restart
 
   imageSource.addEventListener 'load', !->
+    sessionStorage.setItem 'url', imageSource.src
     targetLarge = document.getElementById 'target-large'
     bestLarge = document.getElementById 'best-large'
     targetLarge.src = imageSource.src
