@@ -31,6 +31,9 @@ imgs =
   },{
     o:   'images/GrandCanyon.jpg',
     svg: 'GrandCanyon-140k.svg'
+  },{
+    o:   'images/Lenna.jpg',
+    svg: 'Lenna-120k.svg'
   /*
   },{
     o:   'https://lh3.googleusercontent.com/-VqbjDm2twT4/SxBj8kbEugI/AAAAAAAABWA/nmnZw0hFaF0/s572/Picture+006.jpg',
@@ -38,12 +41,6 @@ imgs =
   },{
     o:   'https://lh4.googleusercontent.com/-q-R5clDIXIg/S1fefky5yRI/AAAAAAAAIYc/yeYl_tYXQwM/s571/IMG_2564.JPG',
     svg: 'OrangeButterflyFish-23k.svg'
-  },{
-    o:   'images/MonaLisaFace.jpg',
-    svg: 'MonaLisaFace.svg'
-  },{
-    o:   'images/Lenna.jpg',
-    svg: 'Lenna.svg'
   },{
     o:   'images/Flowers.jpg',
     svg: 'Flowers-70k.svg'
