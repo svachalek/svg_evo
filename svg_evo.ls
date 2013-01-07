@@ -239,8 +239,8 @@ class Painting
 
   cross: (other) ->
     len = Math.min @shapes.length, other.shapes.length
-    i = between (Math.round len / 4), len
-    j = i + between (Math.round len / 4), len * 3/4
+    i = between 1, len - 2
+    j = between i + 1, len - 1
     shapes = (@shapes.slice 0, i).concat(other.shapes.slice i, j).concat(@shapes.slice(j))
     attempt 'crossover'
     new Painting shapes
