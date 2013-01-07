@@ -101,12 +101,7 @@ reviver = (key, val) ->
   return val
 
 class Point
-  (@x, @y) -> unless x? then @randomize!
-
-  randomize: ->
-    @x = between 0, paintingWidth - 1
-    @y = between 0, paintingHeight - 1
-    return this
+  (@x = (between 0, paintingWidth - 1), @y = (between 0, paintingHeight - 1)) ->
 
   mutate: ->
     dx = between -2, +2
@@ -119,15 +114,7 @@ class Point
 
 class Color
 
-  (@r, @g, @b, @a) -> unless @r? then @randomize!
-
-  randomize: ->
-    @r = randomByte!
-    @g = randomByte!
-    @b = randomByte!
-    @a = between alphaMin, alphaMax
-    @setFillStyle!
-    return this
+  (@r = randomByte!, @g = randomByte!, @b = randomByte!, @a = (between alphaMin, alphaMax)) -> @setFillStyle!
 
   setFillStyle: -> @fillStyle = 'rgba(' + @r + ',' + @g + ',' + @b + ',' + @a/100 + ')'
 
@@ -150,12 +137,7 @@ class Color
     return child
 
 class Painting
-  (shapes) -> if shapes then @shapes = shapes.slice(0) else @randomize!
-
-  randomize: ->
-    @shapes = [new Shape!]
-    @score = 1/0 # infinity
-    return this
+  (@shapes = [new Shape!]) -> @score = 1/0 # infinity
 
   paint: !(canvas, opaque) ->
     ctx = canvas.getContext '2d'
@@ -215,7 +197,7 @@ class Painting
     ctx.putImageData diffData, 0, 0
 
   mutate: ->
-    child = new Painting @shapes
+    child = new Painting @shapes.slice 0
     roll = between 0, 99
     if roll < 1 && @shapes.length > 1
       attempt 'remove-shape'
@@ -269,16 +251,7 @@ class Painting
   cost: -> [shape.cost! for shape in @shapes].reduce (a, b) -> a + b
 
 class Shape
-  (source) ->
-    if source
-      for key, val of source
-        this[key] = val
-    else
-      @randomize!
-
-  randomize: !->
-    @color = new Color!
-    @path = new Path!
+  (@color = new Color!, @path = new Path!) ->
 
   paint: !(ctx) ->
     ctx.fillStyle = @color.fillStyle
@@ -288,7 +261,7 @@ class Shape
 
   mutate: ->
     roll = between 0, 5
-    child = new Shape this
+    child = new Shape @color, @path
     if roll > 0
       child.path = @path.mutate!
     else
@@ -308,19 +281,11 @@ class Shape
 
 class Path
 
-  (source) ->
-    if source
-      @points = source.points.slice 0
-      @center = source.center
-    else
-      @randomize!
-
-  randomize: !->
-    @center = new Point!
-    @points = []
-    while @points.length < pointsMin
-      @points.push @center.mutate!
-    @sort!
+  (@points = [], @center = new Point!) ->
+    if @points.length < pointsMin
+      while @points.length < pointsMin
+        @points.push @center.mutate!
+      @sort!
 
   paint: !(ctx) ->
     first = @points[0]
@@ -336,7 +301,7 @@ class Path
 
   mutate: ->
     roll = between 0, 9
-    child = new Path this
+    child = new Path (@points.slice 0), @center
     if roll < 7
       i = between 0, child.points.length - 1
       child.points[i] = child.points[i].mutate!
