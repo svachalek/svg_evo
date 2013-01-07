@@ -49,6 +49,8 @@ window.addEventListener('load', function(){
   });
   textureSelect = document.getElementById('textureSelect');
   textureSelect.addEventListener('change', function(){
+    var bestLarge;
+    bestLarge = document.getElementById('best-large');
     return bestLarge.style.backgroundImage = 'url(textures/' + textureSelect.value + ')';
   });
   document.getElementById('restart').addEventListener('click', restart);
