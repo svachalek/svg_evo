@@ -159,8 +159,7 @@ class Painting
     canvas.width = target.width
     canvas.height = target.height
     ctx = canvas.getContext '2d'
-    ctx.save!
-    ctx.scale canvas.width / paintingWidth, canvas.height / paintingHeight
+    ctx.setTransform canvas.width / paintingWidth, 0, 0, canvas.height / paintingHeight, 0, 0
     if opaque
       # lay down an opaque white, a clear background looks white but compares black
       ctx.fillStyle = '#ffffff'
@@ -169,7 +168,6 @@ class Painting
       ctx.clearRect 0, 0, paintingWidth, paintingHeight
     for shape in @shapes
       shape.paint ctx
-    ctx.restore!
 
   show: (box) ->
     canvas = box.children[0]
@@ -283,13 +281,10 @@ class Shape
     @path = new Path!
 
   paint: !(ctx) ->
-    ctx.save!
     ctx.fillStyle = @color.fillStyle!
     ctx.beginPath!
     @path.paint ctx
-    ctx.closePath!
     ctx.fill!
-    ctx.restore!
 
   mutate: ->
     roll = between 0, 5
