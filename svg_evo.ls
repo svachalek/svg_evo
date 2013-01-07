@@ -475,11 +475,7 @@ scalePaintings = ->
   ctx.drawImage imageSource, 0, 0, target.width, target.height
   targetData := (ctx.getImageData 0, 0, target.width, target.height).data
   generateWeightMap!
-  for box in survivorBoxes
-    scaleBox box
-  for box in mutantBoxes
-    scaleBox box
-  for box in crossBoxes
+  for box in survivorBoxes.concat(mutantBoxes).concat(crossBoxes)
     scaleBox box
   onScalePaintings!
 
