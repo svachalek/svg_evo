@@ -63,6 +63,7 @@ window.addEventListener 'load', !->
 
   textureSelect = document.getElementById 'textureSelect'
   textureSelect.addEventListener 'change', ->
+    bestLarge = document.getElementById 'best-large'
     bestLarge.style.backgroundImage = 'url(textures/' + textureSelect.value + ')'
 
   document.getElementById('restart').addEventListener 'click', restart
