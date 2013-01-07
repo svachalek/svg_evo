@@ -1,9 +1,9 @@
-var paintWeightMap, onScalePaintings, onSvgImproved, onGenerationComplete;
+var improved, updateFrequency, paintWeightMap, onScalePaintings, onSvgImproved, onGenerationComplete;
+improved = true;
+updateFrequency = 10;
 paintWeightMap = function(){
   var weights, ctx, imageData, data, i, i$, ref$, len$, weight, color;
   weights = document.getElementById('weights');
-  weights.width = target.width;
-  weights.height = target.height;
   ctx = weights.getContext('2d');
   imageData = ctx.createImageData(target.width, target.height);
   data = imageData.data;
@@ -63,8 +63,17 @@ window.addEventListener('load', function(){
   });
 });
 onScalePaintings = function(){
-  var i$, ref$, len$, i, painting;
+  var weights, diff, ref$, i$, len$, i, painting;
+  weights = document.getElementById('weights');
+  weights.width = target.width;
+  weights.height = target.height;
   paintWeightMap();
+  diff = document.getElementById('diff');
+  diff.width = target.width;
+  diff.height = target.height;
+  if ((ref$ = paintings[showIndex]) != null) {
+    ref$.paintDiffMap(diff);
+  }
   for (i$ = 0, len$ = (ref$ = paintings).length; i$ < len$; ++i$) {
     i = i$;
     painting = ref$[i$];
@@ -73,24 +82,33 @@ onScalePaintings = function(){
   }
 };
 onSvgImproved = function(){
-  document.getElementById('best-large').src = 'data:image/svg+xml;base64,' + base64.encode(paintings[showIndex].svg());
-  paintings[showIndex].paintDiffMap(document.getElementById('diff'));
+  improved = true;
 };
 onGenerationComplete = function(){
-  var i$, ref$, len$, i, painting, key, val, percent, fraction;
+  var i$, ref$, len$, painting, i, key, val, percent, fraction;
   for (i$ = 0, len$ = (ref$ = paintings).length; i$ < len$; ++i$) {
-    i = i$;
     painting = ref$[i$];
     painting.age = (painting.age || 0) + 1;
-    painting.show(survivorBoxes[i]);
   }
-  setText(document.getElementById('generation'), generationNumber);
-  setText(document.getElementById('time'), Math.floor(cumulativeTime / 1000) + 's');
-  setText(document.getElementById('speed'), Math.floor(generationNumber / (cumulativeTime / 1000)));
-  for (key in ref$ = attempts) {
-    val = ref$[key];
-    percent = Math.floor((successes[key] || 0) / val * 100) + '%';
-    fraction = (successes[key] || 0) + '/' + val;
-    setText(document.getElementById('success-' + key), fraction + ' (' + percent + ')');
+  if (improved || generationNumber % updateFrequency === 0) {
+    for (i$ = 0, len$ = (ref$ = paintings).length; i$ < len$; ++i$) {
+      i = i$;
+      painting = ref$[i$];
+      painting.show(survivorBoxes[i]);
+    }
+    setText(document.getElementById('speed'), (generationNumber / (cumulativeTime / 1000)).toFixed(2));
+    setText(document.getElementById('time'), Math.floor(cumulativeTime / 1000) + 's');
+    setText(document.getElementById('generation'), generationNumber);
+    if (improved) {
+      document.getElementById('best-large').src = 'data:image/svg+xml;base64,' + base64.encode(paintings[showIndex].svg());
+      paintings[showIndex].paintDiffMap(document.getElementById('diff'));
+      improved = false;
+    }
+    for (key in ref$ = attempts) {
+      val = ref$[key];
+      percent = ((successes[key] || 0) / val * 100).toFixed(2) + '%';
+      fraction = (successes[key] || 0) + '/' + val;
+      setText(document.getElementById('success-' + key), fraction + ' (' + percent + ')');
+    }
   }
 };

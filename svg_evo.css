@@ -99,18 +99,6 @@ td {
   text-align:       right;
 }
 
-#legend {
-  margin:           1em;
-}
-
-.legend {
-  display:          inline-block;
-  vertical-align:   middle;
-  width:            1em;
-  height:           1em;
-  margin-left:      1em;
-}
-
 label {
   vertical-align:   middle;
 }

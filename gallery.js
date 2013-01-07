@@ -5,7 +5,19 @@ imgs = [
     svg: 'MonaLisa-400k.svg'
   }, {
     o: 'images/MonaLisaFace.jpg',
-    svg: 'MonaLisaFace-100k.svg'
+    svg: 'MonaLisaFace-130k.svg'
+  }, {
+    o: 'images/AmericanGothic.jpg',
+    svg: 'AmericanGothic-200k.svg'
+  }, {
+    o: 'images/StarryNight.jpg',
+    svg: 'StarryNight-100k.svg'
+  }, {
+    o: 'images/GrandCanyon.jpg',
+    svg: 'GrandCanyon-140k.svg'
+  }, {
+    o: 'images/Lenna.jpg',
+    svg: 'Lenna-120k.svg'
     /*
     },{
       o:   'https://lh3.googleusercontent.com/-VqbjDm2twT4/SxBj8kbEugI/AAAAAAAABWA/nmnZw0hFaF0/s572/Picture+006.jpg',
@@ -13,18 +25,6 @@ imgs = [
     },{
       o:   'https://lh4.googleusercontent.com/-q-R5clDIXIg/S1fefky5yRI/AAAAAAAAIYc/yeYl_tYXQwM/s571/IMG_2564.JPG',
       svg: 'OrangeButterflyFish-23k.svg'
-    },{
-      o:   'images/GrandCanyon.jpg',
-      svg: 'GrandCanyon.svg'
-    },{
-      o:   'images/MonaLisaFace.jpg',
-      svg: 'MonaLisaFace.svg'
-    },{
-      o:   'images/StarryNight.jpg',
-      svg: 'StarryNight-30k.svg'
-    },{
-      o:   'images/Lenna.jpg',
-      svg: 'Lenna.svg'
     },{
       o:   'images/Flowers.jpg',
       svg: 'Flowers-70k.svg'
