@@ -126,9 +126,10 @@ class Color
     @g = randomByte!
     @b = randomByte!
     @a = between alphaMin, alphaMax
+    @setFillStyle!
     return this
 
-  fillStyle: -> 'rgba(' + @r + ',' + @g + ',' + @b + ',' + @a/100 + ')'
+  setFillStyle: -> @fillStyle = 'rgba(' + @r + ',' + @g + ',' + @b + ',' + @a/100 + ')'
 
   mutate: ->
     child = new Color @r, @g, @b, @a
@@ -145,6 +146,7 @@ class Color
       when 4
         child.a = clamp alphaMin, @a + plusOrMinus(1, 5), alphaMax
         attempt 'alpha'
+    child.setFillStyle!
     return child
 
 class Painting
@@ -281,7 +283,7 @@ class Shape
     @path = new Path!
 
   paint: !(ctx) ->
-    ctx.fillStyle = @color.fillStyle!
+    ctx.fillStyle = @color.fillStyle
     ctx.beginPath!
     @path.paint ctx
     ctx.fill!
@@ -302,7 +304,7 @@ class Shape
     "</linearGradient>"
 
   svgPath: (gradientId) ->
-    "<path fill='" + @color.fillStyle! + "' d='" + @path.svg! + "'/>"
+    "<path fill='" + @color.fillStyle + "' d='" + @path.svg! + "'/>"
 
   cost: -> @path.cost! + 5
 
