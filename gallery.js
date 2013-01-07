@@ -18,17 +18,12 @@ imgs = [
   }, {
     o: 'images/Lenna.jpg',
     svg: 'Lenna-120k.svg'
-    /*
-    },{
-      o:   'https://lh3.googleusercontent.com/-VqbjDm2twT4/SxBj8kbEugI/AAAAAAAABWA/nmnZw0hFaF0/s572/Picture+006.jpg',
-      svg: 'HalfMoonBay-25k.svg'
-    },{
-      o:   'https://lh4.googleusercontent.com/-q-R5clDIXIg/S1fefky5yRI/AAAAAAAAIYc/yeYl_tYXQwM/s571/IMG_2564.JPG',
-      svg: 'OrangeButterflyFish-23k.svg'
-    },{
-      o:   'images/Flowers.jpg',
-      svg: 'Flowers-70k.svg'
-    */
+  }, {
+    o: 'images/Flowers.jpg',
+    svg: 'Flowers-87k.svg'
+  }, {
+    o: 'https://lh4.googleusercontent.com/-q-R5clDIXIg/S1fefky5yRI/AAAAAAAAIYc/yeYl_tYXQwM/s571/IMG_2564.JPG',
+    svg: 'OrangeButterflyFish-40k.svg'
   }
 ];
 imgIndex = -1;
