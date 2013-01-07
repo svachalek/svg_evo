@@ -329,10 +329,10 @@ class Path
     first = @points[0]
     ctx.moveTo first.x, first.y
     i = 1
-    while i <= @points.length
-      control = @points[i % @points.length]
-      point = @points[(i + 1) % @points.length]
-      i += 2
+    len = @points.length
+    while i <= len
+      control = @points[i++]
+      point = @points[i++ % len]
       ctx.quadraticCurveTo control.x, control.y, point.x, point.y
 
   sort: !-> if radialSort then @points.sort (a, b) ~> a.angle(@center) - b.angle(@center)
@@ -369,10 +369,10 @@ class Path
     first = @points[0]
     svg = 'M' + first.svg!
     i = 1
-    while i <= @points.length
-      control = @points[i % @points.length]
-      point = @points[(i + 1) % @points.length]
-      i += 2
+    len = @points.length
+    while i <= len
+      control = @points[i++]
+      point = @points[i++ % len]
       svg += 'Q' + control.svg! + ' ' + point.svg!
     return svg
 
