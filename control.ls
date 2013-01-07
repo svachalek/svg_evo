@@ -20,11 +20,9 @@ improved = true
 updateFrequency = 10
 
 paintWeightMap = !->
-  weights = document.getElementById('weights')
-  weights.width = target.width
-  weights.height = target.height
+  weights = document.getElementById 'weights'
   ctx = weights.getContext '2d'
-  imageData = ctx.createImageData(target.width, target.height)
+  imageData = ctx.createImageData target.width, target.height
   data = imageData.data
   i = 0
   for weight in weightMap
@@ -78,7 +76,14 @@ window.addEventListener 'load', !->
     bestLarge.style.height = targetLarge.style.height = paintingHeight * 3 + 'px'
 
 onScalePaintings = !->
+  weights = document.getElementById 'weights'
+  weights.width = target.width
+  weights.height = target.height
   paintWeightMap!
+  diff = document.getElementById 'diff'
+  diff.width = target.width
+  diff.height = target.height
+  paintings[showIndex]?.paintDiffMap diff
   for painting, i in paintings
     painting.canvas = null
     painting.show survivorBoxes[i]

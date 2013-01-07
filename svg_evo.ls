@@ -158,10 +158,7 @@ class Painting
     return this
 
   paint: !(canvas, opaque) ->
-    canvas.width = target.width
-    canvas.height = target.height
     ctx = canvas.getContext '2d'
-    ctx.setTransform canvas.width / paintingWidth, 0, 0, canvas.height / paintingHeight, 0, 0
     if opaque
       # lay down an opaque white, a clear background looks white but compares black
       ctx.fillStyle = '#ffffff'
@@ -505,6 +502,12 @@ createBox = (cls, text) ->
   setText label, text
   return box
 
+scaleBox = (box) ->
+  canvas = box.children[0]
+  canvas.width = target.width
+  canvas.height = target.height
+  (canvas.getContext '2d').setTransform canvas.width / paintingWidth, 0, 0, canvas.height / paintingHeight, 0, 0
+
 scalePaintings = ->
   if imageSource.width > imageSource.height
     paintingWidth := Math.floor imageSource.width / imageSource.height * paintingBaseSize
@@ -518,6 +521,12 @@ scalePaintings = ->
   ctx.drawImage imageSource, 0, 0, target.width, target.height
   targetData := (ctx.getImageData 0, 0, target.width, target.height).data
   generateWeightMap!
+  for box in survivorBoxes
+    scaleBox box
+  for box in mutantBoxes
+    scaleBox box
+  for box in crossBoxes
+    scaleBox box
   onScalePaintings!
 
 window.addEventListener 'load', !->
