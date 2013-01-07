@@ -38,7 +38,7 @@ target = null
 targetData = null
 weightMap = null
 showIndex = 0
-lastShownIndex = 0
+lastShownIndex = -1
 
 paintingWidth = paintingBaseSize
 paintingHeight = paintingBaseSize
@@ -419,7 +419,7 @@ breed = !->
   cumulativeTime := cumulativeTime + Date.now! - startTime
   # show the best
   if showIndex != lastShownIndex || paintings[showIndex] != previousPaintings[showIndex]
-    lastShownIndex = showIndex
+    lastShownIndex := showIndex
     onSvgImproved!
   onGenerationComplete!
   # save

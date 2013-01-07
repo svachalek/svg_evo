@@ -15,6 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with SVGDNA.  If not, see <http://www.gnu.org/licenses/>
 
+improved = true
+
+updateFrequency = 10
+
 paintWeightMap = !->
   weights = document.getElementById('weights')
   weights.width = target.width
@@ -79,19 +83,22 @@ onScalePaintings = !->
     painting.canvas = null
     painting.show survivorBoxes[i]
 
-onSvgImproved = !->
-  # the base64 encoding shouldn't be necessary but Firefox can't handle the image otherwise
-  (document.getElementById 'best-large').src = 'data:image/svg+xml;base64,' + base64.encode paintings[showIndex].svg!
-  paintings[showIndex].paintDiffMap document.getElementById 'diff'
+onSvgImproved = !-> improved := true
 
 onGenerationComplete = !->
-  for painting, i in paintings
+  for painting in paintings
     painting.age = (painting.age || 0) + 1
-    painting.show survivorBoxes[i]
-  setText document.getElementById('generation'), generationNumber
-  setText document.getElementById('time'), (Math.floor cumulativeTime / 1000) + 's'
-  setText document.getElementById('speed'), (generationNumber / (cumulativeTime / 1000)).toFixed 2
-  if generationNumber % 10 == 0
+  if improved || (generationNumber % updateFrequency == 0)
+    for painting, i in paintings
+      painting.show survivorBoxes[i]
+    setText document.getElementById('speed'), (generationNumber / (cumulativeTime / 1000)).toFixed 2
+    setText document.getElementById('time'), (Math.floor cumulativeTime / 1000) + 's'
+    setText document.getElementById('generation'), generationNumber
+    if improved
+      # the base64 encoding shouldn't be necessary but Firefox can't handle the image otherwise
+      (document.getElementById 'best-large').src = 'data:image/svg+xml;base64,' + base64.encode paintings[showIndex].svg!
+      paintings[showIndex].paintDiffMap document.getElementById 'diff'
+      improved := false
     for key, val of attempts
       percent = ((successes[key] || 0) / val * 100).toFixed(2) + '%'
       fraction = (successes[key] || 0) + '/' + val
