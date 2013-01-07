@@ -400,15 +400,15 @@ generateEdgeMap = ->
       l = Math.max x - 1, 0
       r = Math.min x + 1, target.width - 1
       d = Math.min y + 1, target.height - 1
-      edge = (
-        diffPoint(targetData, x, y, l, u) +
-        diffPoint(targetData, x, y, x, u) +
-        diffPoint(targetData, x, y, r, u) +
-        diffPoint(targetData, x, y, l, y) +
-        diffPoint(targetData, x, y, r, y) +
-        diffPoint(targetData, x, y, l, d) +
-        diffPoint(targetData, x, y, x, d) +
-        diffPoint(targetData, x, y, r, d))
+      edge =
+        (diffPoint targetData, x, y, l, u) +
+        (diffPoint targetData, x, y, x, u) +
+        (diffPoint targetData, x, y, r, u) +
+        (diffPoint targetData, x, y, l, y) +
+        (diffPoint targetData, x, y, r, y) +
+        (diffPoint targetData, x, y, l, d) +
+        (diffPoint targetData, x, y, x, d) +
+        (diffPoint targetData, x, y, r, d)
       edgeMap[--i] = clamp(0, edge / 4, 1)
   return edgeMap
 
