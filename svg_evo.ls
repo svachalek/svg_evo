@@ -177,8 +177,9 @@ class Painting
       @paint canvas, true
       @diffScore canvas
       @canvas = canvas
-    label = 'Score: ' + Math.floor(@score) + (if @age then ' Age: ' + @age else '')
-    setText box.children[1], label
+    if @age
+      label = 'Score: ' + Math.floor(@score) + ' Age: ' + @age
+      setText box.children[1], label
 
   diffScore: (canvas) ->
     ctx = canvas.getContext '2d'
@@ -494,13 +495,14 @@ restart = ->
   resetStats!
   paintings := [new Painting! for n in [1 to generationKeep]]
 
-createBox = (cls) ->
+createBox = (cls, text) ->
   canvas = document.createElement 'canvas'
   box = document.createElement 'div'
   label = document.createElement 'p'
   box.className = 'box ' + cls
   box.appendChild canvas
   box.appendChild label
+  setText label, text
   return box
 
 scalePaintings = ->
@@ -523,17 +525,17 @@ window.addEventListener 'load', !->
   target := document.getElementById('target')
   i = 0
   for n in [1 to generationKeep]
-    box = createBox 'survivor'
+    box = createBox 'survivor', 'Survivor'
     boxesElement.appendChild box
     survivorBoxes.push box
     box.dataIndex = n - 1
     box.addEventListener 'click', !-> showIndex := @dataIndex
   for n in [1 to generationMutate]
-    box = createBox 'mutant'
+    box = createBox 'mutant', 'Mutation'
     boxesElement.appendChild box
     mutantBoxes.push box
   for n in [1 to generationCross]
-    box = createBox 'crossover'
+    box = createBox 'crossover', 'Crossover'
     boxesElement.appendChild box
     crossBoxes.push box
 

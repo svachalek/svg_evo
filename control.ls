@@ -90,9 +90,10 @@ onGenerationComplete = !->
     painting.show survivorBoxes[i]
   setText document.getElementById('generation'), generationNumber
   setText document.getElementById('time'), (Math.floor cumulativeTime / 1000) + 's'
-  setText document.getElementById('speed'), Math.floor generationNumber / (cumulativeTime / 1000)
-  for key, val of attempts
-    percent = ((successes[key] || 0) / val * 100).toFixed(2) + '%'
-    fraction = (successes[key] || 0) + '/' + val
-    setText document.getElementById('success-' + key), fraction + ' (' + percent + ')'
+  setText document.getElementById('speed'), (generationNumber / (cumulativeTime / 1000)).toFixed 2
+  if generationNumber % 10 == 0
+    for key, val of attempts
+      percent = ((successes[key] || 0) / val * 100).toFixed(2) + '%'
+      fraction = (successes[key] || 0) + '/' + val
+      setText document.getElementById('success-' + key), fraction + ' (' + percent + ')'
 
