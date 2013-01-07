@@ -18,7 +18,6 @@
 paintingBaseSize = 100
 testScale = 1
 costScoreRatio = 0.002
-diffMapSensitivity = 0x4000
 weightMin = 0.02
 radialSort = true
 
@@ -90,7 +89,7 @@ diffPoint = (d, x1, y1, x2, y2) ->
 stringifier = (key, val) ->
   if val && typeof val == 'object'
     val._ = val.constructor.name
-  if key == 'diffMap' || key == 'canvas'
+  if key == 'canvas'
     return undefined
   return val
 
@@ -163,7 +162,6 @@ class Painting
   diffScore: (canvas) ->
     ctx = canvas.getContext '2d'
     score = 0
-    diffMap = new Array weightMap.length
     data = (ctx.getImageData 0, 0, target.width, target.height).data
     i = w = 0
     l = data.length
@@ -172,28 +170,26 @@ class Painting
       dg = data[i] - targetData[i++]
       db = data[i] - targetData[i++]
       i++
-      diff = dr * dr + dg * dg + db * db
-      diffMap[w] = diff
-      score += diff * weightMap[w++]
+      score += (dr * dr + dg * dg + db * db) * weightMap[w++]
     @score = score / (target.width * target.height) + @cost! * costScoreRatio
-    @diffMap = diffMap
 
   paintDiffMap: (canvas) ->
-    unless @diffMap
-      @paint canvas
-      @diffScore canvas
-    canvas.width = target.width
-    canvas.height = target.height
+    @paint canvas
     ctx = canvas.getContext '2d'
+    testData = (ctx.getImageData 0, 0, target.width, target.height).data
     diffData = ctx.createImageData target.width, target.height
-    data = diffData.data
+    ddd = diffData.data
     i = 0
-    for point in @diffMap
-      color = 255 * (1 - point / diffMapSensitivity)
-      data[i++] = color # r
-      data[i++] = color # g
-      data[i++] = color # b
-      data[i++] = 255   # a
+    l = ddd.length
+    while i < l
+      ddd[i] = Math.abs testData[i] - targetData[i]
+      i++
+      ddd[i] = Math.abs testData[i] - targetData[i]
+      i++
+      ddd[i] = Math.abs testData[i] - targetData[i]
+      i++
+      ddd[i] = 255   # a
+      i++
     ctx.putImageData diffData, 0, 0
 
   mutate: ->

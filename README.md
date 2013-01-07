@@ -5,7 +5,7 @@ Vector Painting Evolution
 triangle. These paintings are mutated by adding, removing, or
 altering components, and also cross-bred with other paintings. The results are
 compared to the image labeled **Target**, paying particular attention to dark
-areas shown in the image labeled **Weights**. The dark areas in the
+areas shown in the image labeled **Weights**. The colored areas in the
 **Differences** image show where the target image is most different from the
 best solution.
 
