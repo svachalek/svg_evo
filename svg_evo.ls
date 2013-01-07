@@ -163,14 +163,14 @@ class Painting
     ctx = canvas.getContext '2d'
     score = 0
     data = (ctx.getImageData 0, 0, target.width, target.height).data
-    i = w = 0
-    l = data.length
-    while i < l
-      dr = data[i] - targetData[i++]
-      dg = data[i] - targetData[i++]
-      db = data[i] - targetData[i++]
-      i++
-      score += (dr * dr + dg * dg + db * db) * weightMap[w++]
+    w = weightMap.length
+    i = data.length
+    while i--
+      i-- # ignore alpha
+      db = data[i] - targetData[i--]
+      dg = data[i] - targetData[i--]
+      dr = data[i] - targetData[i--]
+      score += (dr * dr + dg * dg + db * db) * weightMap[--w]
     @score = score / (target.width * target.height) + @cost! * costScoreRatio
 
   paintDiffMap: (canvas) ->
@@ -179,17 +179,12 @@ class Painting
     testData = (ctx.getImageData 0, 0, target.width, target.height).data
     diffData = ctx.createImageData target.width, target.height
     ddd = diffData.data
-    i = 0
-    l = ddd.length
-    while i < l
-      ddd[i] = Math.abs testData[i] - targetData[i]
-      i++
-      ddd[i] = Math.abs testData[i] - targetData[i]
-      i++
-      ddd[i] = Math.abs testData[i] - targetData[i]
-      i++
-      ddd[i] = 255   # a
-      i++
+    i = ddd.length
+    while i
+      ddd[--i] = 255 # opacity = 1
+      ddd[--i] = Math.abs testData[i] - targetData[i]
+      ddd[--i] = Math.abs testData[i] - targetData[i]
+      ddd[--i] = Math.abs testData[i] - targetData[i]
     ctx.putImageData diffData, 0, 0
 
   mutate: ->
@@ -341,8 +336,8 @@ mutate = !->
   for i in [0 to generationMutate - 1]
     n = i % paintings.length
     child = mom = paintings[n]
-    j = 0
-    while j++ < mutationRate
+    j = mutationRate
+    while j--
       child = child.mutate!
     child.show mutantBoxes[i]
     if child.score < mom.score
@@ -389,18 +384,18 @@ breed = !->
 generateWeightMap = !->
   edgeMap = generateEdgeMap!
   histoMap = generateHistoMap!
-  i = 0
-  weightMap := []
-  while i < edgeMap.length
-    weightMap.push clamp weightMin, edgeMap[i] + histoMap[i], 1
-    i++
+  i = edgeMap.length
+  weightMap := new Array i
+  while i--
+    weightMap[i] = clamp weightMin, edgeMap[i] + histoMap[i], 1
 
 generateEdgeMap = ->
-  edgeMap = []
-  y = 0
-  while y < target.height
-    x = 0
-    while x < target.width
+  edgeMap = new Array target.height * target.width
+  i = edgeMap.length
+  y = target.height
+  while y--
+    x = target.width
+    while x--
       u = Math.max y - 1, 0
       l = Math.max x - 1, 0
       r = Math.min x + 1, target.width - 1
@@ -414,33 +409,31 @@ generateEdgeMap = ->
         diffPoint(targetData, x, y, l, d) +
         diffPoint(targetData, x, y, x, d) +
         diffPoint(targetData, x, y, r, d))
-      edgeMap.push clamp(0, edge / 4, 1)
-      ++x
-    ++y
+      edgeMap[--i] = clamp(0, edge / 4, 1)
   return edgeMap
 
 generateHistoMap = ->
   histogram = []
-  i = 0
+  i = targetData.length
   max = 0
-  while i < targetData.length
-    r = targetData[i++]
-    g = targetData[i++]
-    b = targetData[i++]
-    a = targetData[i++]
+  while i
+    a = targetData[--i]
+    b = targetData[--i]
+    g = targetData[--i]
+    r = targetData[--i]
     color = (r .>>. 5) .<<. 6 .|. (g .>>. 5) .<<. 3 .|. (b .>>. 5)
     histogram[color] = (histogram[color] || 0) + 1
     if histogram[color] > max then max = histogram[color]
-  histoMap = []
-  i = 0
-  while i < targetData.length
-    r = targetData[i++]
-    g = targetData[i++]
-    b = targetData[i++]
-    a = targetData[i++]
+  histoMap = new Array targetData.length / 4
+  i = targetData.length
+  while i
+    a = targetData[--i]
+    b = targetData[--i]
+    g = targetData[--i]
+    r = targetData[--i]
     color = (r .>>. 5) .<<. 6 .|. (g .>>. 5) .<<. 3 .|. (b .>>. 5)
     rarity = histogram[color] / (target.width * target.height) * histogram.length
-    histoMap.push clamp 0, 1 - rarity, 1
+    histoMap[i / 4] = clamp 0, 1 - rarity, 1
   return histoMap
 
 resetStats = ->
