@@ -219,11 +219,11 @@ Painting = (function(){
     data = ctx.getImageData(0, 0, target.width, target.height).data;
     w = weightMap.length;
     i = data.length;
-    while (i--) {
-      i--;
-      db = data[i] - targetData[i--];
-      dg = data[i] - targetData[i--];
-      dr = data[i] - targetData[i--];
+    while (i) {
+      --i;
+      db = data[--i] - targetData[i];
+      dg = data[--i] - targetData[i];
+      dr = data[--i] - targetData[i];
       score += (dr * dr + dg * dg + db * db) * weightMap[--w];
     }
     return this.score = score / (target.width * target.height) + this.cost() * costScoreRatio;
@@ -285,7 +285,7 @@ Painting = (function(){
       for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
         i = i$;
         shape = ref$[i$];
-        results$.push(shape.svgPath(i));
+        results$.push(shape.svg(i));
       }
       return results$;
     }.call(this)).join('') + "</g>" + "</svg>";
@@ -333,10 +333,7 @@ Shape = (function(){
     }
     return child;
   };
-  prototype.svgGradient = function(gradientId){
-    return "<linearGradient id='" + gradientId + "' gradientUnits='userSpaceOnUse'>" + "<stop offset='0%' " + this.color1.svg() + "/>" + "<stop offset='100%' " + this.color2.svg() + "/>" + "</linearGradient>";
-  };
-  prototype.svgPath = function(gradientId){
+  prototype.svg = function(gradientId){
     return "<path fill='" + this.color.fillStyle + "' d='" + this.path.svg() + "'/>";
   };
   prototype.cost = function(){
