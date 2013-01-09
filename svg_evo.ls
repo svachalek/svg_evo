@@ -165,11 +165,11 @@ class Painting
     data = (ctx.getImageData 0, 0, target.width, target.height).data
     w = weightMap.length
     i = data.length
-    while i--
-      i-- # ignore alpha
-      db = data[i] - targetData[i--]
-      dg = data[i] - targetData[i--]
-      dr = data[i] - targetData[i--]
+    while i
+      --i # ignore alpha
+      db = data[--i] - targetData[i]
+      dg = data[--i] - targetData[i]
+      dr = data[--i] - targetData[i]
       score += (dr * dr + dg * dg + db * db) * weightMap[--w]
     @score = score / (target.width * target.height) + @cost! * costScoreRatio
 
