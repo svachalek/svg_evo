@@ -66,7 +66,7 @@ window.addEventListener 'load', !->
     bestLarge = document.getElementById 'best-large'
     bestLarge.style.backgroundImage = 'url(textures/' + textureSelect.value + ')'
 
-  document.getElementById('restart').addEventListener 'click', restart
+  (document.getElementById 'restart').addEventListener 'click', restart
 
   imageSource.addEventListener 'load', !->
     sessionStorage.setItem 'url', imageSource.src
@@ -97,9 +97,9 @@ onGenerationComplete = !->
   if improved || (generationNumber % updateFrequency == 0)
     for painting, i in paintings
       painting.show survivorBoxes[i]
-    setText document.getElementById('speed'), (generationNumber / (cumulativeTime / 1000)).toFixed 2
-    setText document.getElementById('time'), (Math.floor cumulativeTime / 1000) + 's'
-    setText document.getElementById('generation'), generationNumber
+    setText (document.getElementById 'speed'), (generationNumber / (cumulativeTime / 1000)).toFixed 2
+    setText (document.getElementById 'time'), (Math.floor cumulativeTime / 1000) + 's'
+    setText (document.getElementById 'generation'), generationNumber
     if improved
       # the base64 encoding shouldn't be necessary but Firefox can't handle the image otherwise
       (document.getElementById 'best-large').src = 'data:image/svg+xml;base64,' + base64.encode paintings[showIndex].svg!

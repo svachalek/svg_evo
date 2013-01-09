@@ -68,7 +68,7 @@ success = !->
   attempted := []
 
 between = (min, max) -> Math.floor (Math.random! * (max - min + 1) + min)
-betweenHigh = (min, max) -> Math.floor (Math.sin(Math.random! * Math.PI / 2) * (max - min + 1) + min)
+betweenHigh = (min, max) -> Math.floor ((Math.sin Math.random! * Math.PI / 2) * (max - min + 1) + min)
 randomByte = -> between 0, 255
 randomPainting = -> between 0, paintings.length - 1
 randomSign = -> if Math.random! < 0.5 then -1 else 1
@@ -121,16 +121,16 @@ class Color
     child = new Color @r, @g, @b, @a
     switch between 1, 4
       when 1
-        child.r = clamp 0, @r + plusOrMinus(1, 16), 255
+        child.r = clamp 0, @r + (plusOrMinus 1, 16), 255
         attempt 'rgb'
       when 2
-        child.g = clamp 0, @g + plusOrMinus(1, 16), 255
+        child.g = clamp 0, @g + (plusOrMinus 1, 16), 255
         attempt 'rgb'
       when 3
-        child.b = clamp 0, @b + plusOrMinus(1, 16), 255
+        child.b = clamp 0, @b + (plusOrMinus 1, 16), 255
         attempt 'rgb'
       when 4
-        child.a = clamp alphaMin, @a + plusOrMinus(1, 5), alphaMax
+        child.a = clamp alphaMin, @a + (plusOrMinus 1, 5), alphaMax
         attempt 'alpha'
     child.setFillStyle!
     return child
@@ -156,7 +156,7 @@ class Painting
       @diffScore canvas
       @canvas = canvas
     if @age
-      label = 'Score: ' + Math.floor(@score) + ' Age: ' + @age
+      label = 'Score: ' + (Math.floor @score) + ' Age: ' + @age
       setText box.children[1], label
 
   diffScore: (canvas) ->
@@ -212,7 +212,7 @@ class Painting
     len = Math.min @shapes.length, other.shapes.length
     i = between 1, len - 2
     j = between i + 1, len - 1
-    shapes = (@shapes.slice 0, i).concat(other.shapes.slice i, j).concat(@shapes.slice(j))
+    shapes = (@shapes.slice 0, i).concat(other.shapes.slice i, j).concat(@shapes.slice j)
     attempt 'crossover'
     new Painting shapes
 
@@ -282,7 +282,7 @@ class Path
       point = @points[i++ % len]
       ctx.quadraticCurveTo control.x, control.y, point.x, point.y
 
-  sort: !-> if radialSort then @points.sort (a, b) ~> a.angle(@center) - b.angle(@center)
+  sort: !-> if radialSort then @points.sort (a, b) ~> (a.angle @center) - (b.angle @center)
 
   mutate: ->
     roll = between 0, 9
@@ -403,7 +403,7 @@ generateEdgeMap = ->
         (diffPoint targetData, x, y, l, d) +
         (diffPoint targetData, x, y, x, d) +
         (diffPoint targetData, x, y, r, d)
-      edgeMap[--i] = clamp(0, edge / 4, 1)
+      edgeMap[--i] = clamp 0, edge / 4, 1
   return edgeMap
 
 generateHistoMap = ->
@@ -474,8 +474,8 @@ scalePaintings = ->
   onScalePaintings!
 
 window.addEventListener 'load', !->
-  boxesElement = document.getElementById('boxes')
-  target := document.getElementById('target')
+  boxesElement = document.getElementById 'boxes'
+  target := document.getElementById 'target'
   i = 0
   for n in [1 to generationKeep]
     box = createBox 'survivor', 'Survivor'
@@ -496,7 +496,7 @@ window.addEventListener 'load', !->
   imageSource.addEventListener 'load', !->
     scalePaintings!
     if window.__proto__ && sessionStorage.getItem storageKey
-      paintings := (JSON.parse sessionStorage.getItem(storageKey), reviver).concat(paintings).slice 0, generationKeep
+      paintings := (JSON.parse (sessionStorage.getItem storageKey), reviver).concat(paintings).slice 0, generationKeep
       resetStats!
     else
       restart!
