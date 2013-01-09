@@ -235,7 +235,7 @@ class Painting
         "</clipPath>" +
       "</defs>" +
       "<g clip-path='url(\#clip)'>" +
-        [shape.svgPath i for shape, i in @shapes].join('') +
+        [shape.svg i for shape, i in @shapes].join('') +
       "</g>" +
     "</svg>"
 
@@ -259,13 +259,7 @@ class Shape
       child.color = @color.mutate!
     return child
 
-  svgGradient: (gradientId)  ->
-    "<linearGradient id='" + gradientId + "' gradientUnits='userSpaceOnUse'>" +
-      "<stop offset='0%' "   + @color1.svg! + "/>" +
-      "<stop offset='100%' " + @color2.svg! + "/>" +
-    "</linearGradient>"
-
-  svgPath: (gradientId) ->
+  svg: (gradientId) ->
     "<path fill='" + @color.fillStyle + "' d='" + @path.svg! + "'/>"
 
   cost: -> @path.cost! + 5
