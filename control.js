@@ -73,6 +73,7 @@ onScalePaintings = function(){
   diff = document.getElementById('diff');
   diff.width = target.width;
   diff.height = target.height;
+  diff.getContext('2d').setTransform(target.width / paintingWidth, 0, 0, target.height / paintingHeight, 0, 0);
   if ((ref$ = paintings[showIndex]) != null) {
     ref$.paintDiffMap(diff);
   }

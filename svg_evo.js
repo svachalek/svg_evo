@@ -1,9 +1,9 @@
-var paintingBaseSize, testScale, costScoreRatio, weightMin, radialSort, alphaMin, alphaMax, pointsMin, generationKeep, generationMutate, generationCross, generationNumber, cumulativeTime, storageKey, imageSource, target, targetData, weightMap, showIndex, lastShownIndex, paintingWidth, paintingHeight, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, onSvgImproved, onGenerationComplete, onScalePaintings, attempted, attempt, failure, success, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, mutate, crossover, breed, generateWeightMap, generateEdgeMap, generateHistoMap, resetStats, restart, createBox, scaleBox, scalePaintings;
+var paintingBaseSize, testScale, weightMin, radialSort, costScoreRatio, alphaMin, alphaMax, pointsMin, generationKeep, generationMutate, generationCross, generationNumber, cumulativeTime, storageKey, imageSource, target, targetData, weightMap, showIndex, lastShownIndex, paintingWidth, paintingHeight, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, onSvgImproved, onGenerationComplete, onScalePaintings, attempted, attempt, failure, success, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, mutate, crossover, breed, generateWeightMap, generateEdgeMap, generateHistoMap, resetStats, restart, createBox, scaleBox, scalePaintings;
 paintingBaseSize = 100;
 testScale = 1;
-costScoreRatio = 0.002;
 weightMin = 0.02;
 radialSort = true;
+costScoreRatio = 200;
 alphaMin = 30;
 alphaMax = 60;
 pointsMin = 6;
@@ -226,7 +226,7 @@ Painting = (function(){
       dr = data[--i] - targetData[i];
       score += (dr * dr + dg * dg + db * db) * weightMap[--w];
     }
-    return this.score = score / (target.width * target.height) + this.cost() * costScoreRatio;
+    return this.score = (score + this.cost() * costScoreRatio) / (target.width * target.height);
   };
   prototype.paintDiffMap = function(canvas){
     var ctx, testData, diffData, ddd, i;
@@ -244,26 +244,37 @@ Painting = (function(){
     }
     return ctx.putImageData(diffData, 0, 0);
   };
-  prototype.mutate = function(){
-    var child, roll, i, tmp;
+  prototype.mutate = function(n){
+    var child, total, i$, ref$, len$, shape, roll, i, tmp;
     child = new Painting(this.shapes.slice(0));
-    roll = between(0, 99);
-    if (roll < 1 && this.shapes.length > 1) {
-      attempt('remove-shape');
-      i = betweenHigh(0, this.shapes.length - 1);
-      child.shapes.splice(i, 1);
-    } else if (roll < 2) {
-      attempt('add-shape');
-      child.shapes.push(new Shape());
-    } else if (roll < 5 && this.shapes.length >= 2) {
-      attempt('reorder-shapes');
-      i = betweenHigh(0, this.shapes.length - 2);
-      tmp = this.shapes[i];
-      child.shapes[i] = this.shapes[i + 1];
-      child.shapes[i + 1] = tmp;
-    } else {
-      i = betweenHigh(0, this.shapes.length - 1);
-      child.shapes[i] = this.shapes[i].mutate();
+    total = 0.05;
+    for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
+      shape = ref$[i$];
+      total += 1 / (shape.stability || 1);
+    }
+    roll = Math.random() * total;
+    i = child.shapes.length;
+    while (i-- && roll > 0) {
+      roll -= 1 / (child.shapes[i].stability || 1);
+    }
+    while (n--) {
+      i = clamp(0, i, child.shapes.length - 1);
+      if (roll < 0) {
+        child.shapes[i] = child.shapes[i].mutate();
+      } else if ((roll -= 0.01) < 0 && child.shapes.length > 1) {
+        attempt('remove-shape');
+        child.shapes.splice(i, 1);
+      } else if ((roll -= 0.01) < 0) {
+        attempt('add-shape');
+        child.shapes.push(new Shape());
+      } else if ((roll -= 0.03) < 0 && child.shapes.length >= 2) {
+        attempt('reorder-shapes');
+        i = Math.min(i, child.shapes.length - 2);
+        tmp = child.shapes[i];
+        child.shapes[i] = child.shapes[i + 1];
+        child.shapes[i + 1] = tmp;
+      }
+      i += plusOrMinus(0, 1);
     }
     return child;
   };
@@ -323,10 +334,10 @@ Shape = (function(){
     ctx.fill();
   };
   prototype.mutate = function(){
-    var roll, child;
-    roll = between(0, 5);
+    var child;
+    this.stability = (this.stability || 0) + 1;
     child = new Shape(this.color, this.path);
-    if (roll > 0) {
+    if (between(0, 5) > 0) {
       child.path = this.path.mutate();
     } else {
       child.color = this.color.mutate();
@@ -337,7 +348,7 @@ Shape = (function(){
     return "<path fill='" + this.color.fillStyle + "' d='" + this.path.svg() + "'/>";
   };
   prototype.cost = function(){
-    return this.path.cost() + 5;
+    return this.path.cost() + 4;
   };
   return Shape;
 }());
@@ -423,21 +434,18 @@ Path = (function(){
     return svg;
   };
   prototype.cost = function(){
-    return this.points.length;
+    return this.points.length * 2;
   };
   return Path;
 }());
 mutate = function(){
-  var mutationRate, i$, ref$, len$, i, n, child, mom, j;
+  var mutationRate, i$, ref$, len$, i, n, mom, child;
   mutationRate = Math.max(1, 5 - Math.floor(Math.log(generationNumber) / Math.LN10));
   for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
     i = ref$[i$];
     n = i % paintings.length;
-    child = mom = paintings[n];
-    j = mutationRate;
-    while (j--) {
-      child = child.mutate();
-    }
+    mom = paintings[n];
+    child = mom.mutate(mutationRate);
     child.show(mutantBoxes[i]);
     if (child.score < mom.score) {
       paintings[n] = child;
