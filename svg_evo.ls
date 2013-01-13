@@ -17,9 +17,14 @@
 
 paintingBaseSize = 100
 testScale = 1
-costScoreRatio = 0.002
 weightMin = 0.02
 radialSort = true
+
+# determines complexity of result
+# cost is 1 per variable needed in the solution, thus adding 1 point to a shape is twice (x and y) costScoreRatio
+# score is the sum of the squares of dR, dG, dB, thus 8 off on each dimension is 64 + 64 + 64 = 196
+# thus to allow 1 to fix 1 such pixel would implies costScoreRatio = 196 / 2
+costScoreRatio = 200
 
 alphaMin = 30
 alphaMax = 60
@@ -171,7 +176,7 @@ class Painting
       dg = data[--i] - targetData[i]
       dr = data[--i] - targetData[i]
       score += (dr * dr + dg * dg + db * db) * weightMap[--w]
-    @score = score / (target.width * target.height) + @cost! * costScoreRatio
+    @score = (score + @cost! * costScoreRatio) / (target.width * target.height)
 
   paintDiffMap: (canvas) ->
     @paint canvas
@@ -262,7 +267,7 @@ class Shape
   svg: (gradientId) ->
     "<path fill='" + @color.fillStyle + "' d='" + @path.svg! + "'/>"
 
-  cost: -> @path.cost! + 5
+  cost: -> @path.cost! + 4
 
 class Path
 
@@ -323,7 +328,7 @@ class Path
       svg += 'Q' + control.svg! + ' ' + point.svg!
     return svg
 
-  cost: -> @points.length
+  cost: -> @points.length * 2
 
 mutate = !->
   mutationRate = Math.max 1, 5 - (Math.floor (Math.log generationNumber) / Math.LN10)
