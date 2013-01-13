@@ -244,37 +244,26 @@ Painting = (function(){
     }
     return ctx.putImageData(diffData, 0, 0);
   };
-  prototype.mutate = function(n){
-    var child, total, i$, ref$, len$, shape, roll, i, tmp;
+  prototype.mutate = function(){
+    var child, roll, i, tmp;
     child = new Painting(this.shapes.slice(0));
-    total = 0.05;
-    for (i$ = 0, len$ = (ref$ = this.shapes).length; i$ < len$; ++i$) {
-      shape = ref$[i$];
-      total += 1 / (shape.stability || 1);
-    }
-    roll = Math.random() * total;
-    i = child.shapes.length;
-    while (i-- && roll > 0) {
-      roll -= 1 / (child.shapes[i].stability || 1);
-    }
-    while (n--) {
-      i = clamp(0, i, child.shapes.length - 1);
-      if (roll < 0) {
-        child.shapes[i] = child.shapes[i].mutate();
-      } else if ((roll -= 0.01) < 0 && child.shapes.length > 1) {
-        attempt('remove-shape');
-        child.shapes.splice(i, 1);
-      } else if ((roll -= 0.01) < 0) {
-        attempt('add-shape');
-        child.shapes.push(new Shape());
-      } else if ((roll -= 0.03) < 0 && child.shapes.length >= 2) {
-        attempt('reorder-shapes');
-        i = Math.min(i, child.shapes.length - 2);
-        tmp = child.shapes[i];
-        child.shapes[i] = child.shapes[i + 1];
-        child.shapes[i + 1] = tmp;
-      }
-      i += plusOrMinus(0, 1);
+    roll = between(0, 99);
+    if (roll < 1 && this.shapes.length > 1) {
+      attempt('remove-shape');
+      i = betweenHigh(0, this.shapes.length - 1);
+      child.shapes.splice(i, 1);
+    } else if (roll < 2) {
+      attempt('add-shape');
+      child.shapes.push(new Shape());
+    } else if (roll < 5 && this.shapes.length >= 2) {
+      attempt('reorder-shapes');
+      i = betweenHigh(0, this.shapes.length - 2);
+      tmp = this.shapes[i];
+      child.shapes[i] = this.shapes[i + 1];
+      child.shapes[i + 1] = tmp;
+    } else {
+      i = betweenHigh(0, this.shapes.length - 1);
+      child.shapes[i] = this.shapes[i].mutate();
     }
     return child;
   };
@@ -334,10 +323,10 @@ Shape = (function(){
     ctx.fill();
   };
   prototype.mutate = function(){
-    var child;
-    this.stability = (this.stability || 0) + 1;
+    var roll, child;
+    roll = between(0, 5);
     child = new Shape(this.color, this.path);
-    if (between(0, 5) > 0) {
+    if (roll > 0) {
       child.path = this.path.mutate();
     } else {
       child.color = this.color.mutate();
@@ -439,13 +428,16 @@ Path = (function(){
   return Path;
 }());
 mutate = function(){
-  var mutationRate, i$, ref$, len$, i, n, mom, child;
+  var mutationRate, i$, ref$, len$, i, n, child, mom, j;
   mutationRate = Math.max(1, 5 - Math.floor(Math.log(generationNumber) / Math.LN10));
   for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
     i = ref$[i$];
     n = i % paintings.length;
-    mom = paintings[n];
-    child = mom.mutate(mutationRate);
+    child = mom = paintings[n];
+    j = mutationRate;
+    while (j--) {
+      child = child.mutate();
+    }
     child.show(mutantBoxes[i]);
     if (child.score < mom.score) {
       paintings[n] = child;
