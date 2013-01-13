@@ -368,7 +368,6 @@ breed = !->
   previousPaintings = paintings.slice 0
   mutate!
   crossover!
-  cumulativeTime := cumulativeTime + Date.now! - startTime
   # show the best
   if showIndex != lastShownIndex || paintings[showIndex] != previousPaintings[showIndex]
     lastShownIndex := showIndex
@@ -378,6 +377,7 @@ breed = !->
   if generationNumber % 100 == 0
     sessionStorage.setItem storageKey, JSON.stringify paintings, stringifier
   # and repeat
+  cumulativeTime := cumulativeTime + Date.now! - startTime
   setTimeout breed, 0
 
 generateWeightMap = !->
