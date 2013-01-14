@@ -17,12 +17,13 @@ This project was inspired by Roger Alsing's [Evolution of Mona Lisa][2] project
 and follows a similar algorithm but has no code in common. Aside from the obvious
 platform difference, I have added:
 
-* curves
-* crossover
+* curved lines
+* solution crossovers (two-point method)
 * weighted evaluation based on color histogram and edge detection
+* scoring based on cost in addition to error
 
 For my own challenge I didn't read the source or run the program until I was
-generating pretty good results on my own. Comparing in hindsight one of the
+generating pretty good results on my own. Comparing in hindsight, one of the
 biggest differences I notice that is not related to new features is the
 selection of mutations; while his mutation decisions are independent and can
 result in zero, one, or multiple simultaneous changes, here we make one single

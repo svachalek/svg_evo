@@ -24,7 +24,7 @@ radialSort = true
 # cost is 1 per variable needed in the solution, thus adding 1 point to a shape is twice (x and y) costScoreRatio
 # score is the sum of the squares of dR, dG, dB, thus 8 off on each dimension is 64 + 64 + 64 = 196
 # thus to allow 1 to fix 1 such pixel at weightAverage implies costScoreRatio = 196 / 2
-costScoreRatio = 200
+costScoreRatio = 1000
 
 alphaMin = 30
 alphaMax = 60
