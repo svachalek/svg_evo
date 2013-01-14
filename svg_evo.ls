@@ -162,7 +162,7 @@ class Painting
       @diffScore canvas
       @canvas = canvas
     if @age
-      label = 'Score: ' + (Math.floor @score) + ' Age: ' + @age
+      label = '~' + (@scoreError.toPrecision 5) + ' $' + (@scoreCost.toFixed 2)
       setText box.children[1], label
 
   diffScore: (canvas) ->
@@ -177,7 +177,9 @@ class Painting
       dg = data[--i] - targetData[i]
       dr = data[--i] - targetData[i]
       score += (dr * dr + dg * dg + db * db) * weightMap[--w]
-    @score = (score + @cost! * costScoreRatio * weightAverage) / (target.width * target.height)
+    @scoreError = score / (target.width * target.height)
+    @scoreCost = @cost! * costScoreRatio * weightAverage / (target.width * target.height)
+    @score = @scoreError + @scoreCost
 
   paintDiffMap: (canvas) ->
     @paint canvas
