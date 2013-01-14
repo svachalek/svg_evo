@@ -23,7 +23,7 @@ radialSort = true
 # determines complexity of result
 # cost is 1 per variable needed in the solution, thus adding 1 point to a shape is twice (x and y) costScoreRatio
 # score is the sum of the squares of dR, dG, dB, thus 8 off on each dimension is 64 + 64 + 64 = 196
-# thus to allow 1 to fix 1 such pixel would implies costScoreRatio = 196 / 2
+# thus to allow 1 to fix 1 such pixel at weightAverage implies costScoreRatio = 196 / 2
 costScoreRatio = 200
 
 alphaMin = 30
@@ -41,6 +41,7 @@ imageSource = null
 target = null
 targetData = null
 weightMap = null
+weightAverage = null
 showIndex = 0
 lastShownIndex = -1
 
@@ -176,7 +177,7 @@ class Painting
       dg = data[--i] - targetData[i]
       dr = data[--i] - targetData[i]
       score += (dr * dr + dg * dg + db * db) * weightMap[--w]
-    @score = (score + @cost! * costScoreRatio) / (target.width * target.height)
+    @score = (score + @cost! * costScoreRatio * weightAverage) / (target.width * target.height)
 
   paintDiffMap: (canvas) ->
     @paint canvas
@@ -385,8 +386,10 @@ generateWeightMap = !->
   histoMap = generateHistoMap!
   i = edgeMap.length
   weightMap := new Array i
+  weightTotal = 0
   while i--
-    weightMap[i] = clamp weightMin, edgeMap[i] + histoMap[i], 1
+    weightTotal += weightMap[i] = clamp weightMin, edgeMap[i] + histoMap[i], 1
+  weightAverage := weightTotal / weightMap.length
 
 generateEdgeMap = ->
   edgeMap = new Array target.height * target.width
