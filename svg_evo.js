@@ -1,4 +1,4 @@
-var paintingBaseSize, testScale, weightMin, radialSort, costScoreRatio, alphaMin, alphaMax, pointsMin, generationKeep, generationMutate, generationCross, generationNumber, cumulativeTime, storageKey, imageSource, target, targetData, weightMap, showIndex, lastShownIndex, paintingWidth, paintingHeight, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, onSvgImproved, onGenerationComplete, onScalePaintings, attempted, attempt, failure, success, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, mutate, crossover, breed, generateWeightMap, generateEdgeMap, generateHistoMap, resetStats, restart, createBox, scaleBox, scalePaintings;
+var paintingBaseSize, testScale, weightMin, radialSort, costScoreRatio, alphaMin, alphaMax, pointsMin, generationKeep, generationMutate, generationCross, generationNumber, cumulativeTime, storageKey, imageSource, target, targetData, weightMap, weightAverage, showIndex, lastShownIndex, paintingWidth, paintingHeight, paintings, survivorBoxes, mutantBoxes, crossBoxes, attempts, successes, onSvgImproved, onGenerationComplete, onScalePaintings, attempted, attempt, failure, success, between, betweenHigh, randomByte, randomPainting, randomSign, clamp, plusOrMinus, setText, diffPoint, stringifier, reviver, Point, Color, Painting, Shape, Path, mutate, crossover, breed, generateWeightMap, generateEdgeMap, generateHistoMap, resetStats, restart, createBox, scaleBox, scalePaintings;
 paintingBaseSize = 100;
 testScale = 1;
 weightMin = 0.02;
@@ -17,6 +17,7 @@ imageSource = null;
 target = null;
 targetData = null;
 weightMap = null;
+weightAverage = null;
 showIndex = 0;
 lastShownIndex = -1;
 paintingWidth = paintingBaseSize;
@@ -226,7 +227,7 @@ Painting = (function(){
       dr = data[--i] - targetData[i];
       score += (dr * dr + dg * dg + db * db) * weightMap[--w];
     }
-    return this.score = (score + this.cost() * costScoreRatio) / (target.width * target.height);
+    return this.score = (score + this.cost() * costScoreRatio * weightAverage) / (target.width * target.height);
   };
   prototype.paintDiffMap = function(canvas){
     var ctx, testData, diffData, ddd, i;
@@ -489,7 +490,6 @@ breed = function(){
   previousPaintings = paintings.slice(0);
   mutate();
   crossover();
-  cumulativeTime = cumulativeTime + Date.now() - startTime;
   if (showIndex !== lastShownIndex || paintings[showIndex] !== previousPaintings[showIndex]) {
     lastShownIndex = showIndex;
     onSvgImproved();
@@ -498,17 +498,20 @@ breed = function(){
   if (generationNumber % 100 === 0) {
     sessionStorage.setItem(storageKey, JSON.stringify(paintings, stringifier));
   }
+  cumulativeTime = cumulativeTime + Date.now() - startTime;
   setTimeout(breed, 0);
 };
 generateWeightMap = function(){
-  var edgeMap, histoMap, i;
+  var edgeMap, histoMap, i, weightTotal;
   edgeMap = generateEdgeMap();
   histoMap = generateHistoMap();
   i = edgeMap.length;
   weightMap = new Array(i);
+  weightTotal = 0;
   while (i--) {
-    weightMap[i] = clamp(weightMin, edgeMap[i] + histoMap[i], 1);
+    weightTotal += weightMap[i] = clamp(weightMin, edgeMap[i] + histoMap[i], 1);
   }
+  weightAverage = weightTotal / weightMap.length;
 };
 generateEdgeMap = function(){
   var edgeMap, i, y, x, u, l, r, d, edge;
