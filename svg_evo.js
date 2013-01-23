@@ -209,7 +209,7 @@ Painting = (function(){
       this.canvas = canvas;
     }
     if (this.age) {
-      label = 'Score: ' + Math.floor(this.score) + ' Age: ' + this.age;
+      label = '~' + this.scoreError.toPrecision(5) + ' $' + this.scoreCost.toFixed(2);
       return setText(box.children[1], label);
     }
   };
@@ -227,7 +227,9 @@ Painting = (function(){
       dr = data[--i] - targetData[i];
       score += (dr * dr + dg * dg + db * db) * weightMap[--w];
     }
-    return this.score = (score + this.cost() * costScoreRatio * weightAverage) / (target.width * target.height);
+    this.scoreError = score / (target.width * target.height);
+    this.scoreCost = this.cost() * costScoreRatio * weightAverage / (target.width * target.height);
+    return this.score = this.scoreError + this.scoreCost;
   };
   prototype.paintDiffMap = function(canvas){
     var ctx, testData, diffData, ddd, i;
