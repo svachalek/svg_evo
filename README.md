@@ -55,7 +55,7 @@ However, this produces only one result, while other settings produce multiple
 solutions of the same quality in much less time than these settings do.
 
 
-[1]: http://svachalek.github.com/svgdna/
+[1]: http://svachalek.github.com/svg_evo/
 [2]: http://rogeralsing.com/2008/12/07/genetic-programming-evolution-of-mona-lisa/
 [3]: http://localhost:8000
 
