@@ -36,7 +36,6 @@ Building
 
 This is entirely client-side code. To build, just run:
 
-    livescript -c -b *.ls
     python -m SimpleHTTPServer
 
 And navigate to [localhost:8000][3] in your browser.
