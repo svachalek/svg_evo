@@ -31,26 +31,25 @@
  *
  * It is also found in Safari and Chrome.  It is not available in IE.
  *
- * if (!window.btoa) window.btoa = base64.encode
- * if (!window.atob) window.atob = base64.decode
+ * if (!window.btoa) window.btoa = encode
+ * if (!window.atob) window.atob = decode
  *
  * The original spec's for atob/btoa are a bit lacking
  * https://developer.mozilla.org/en/DOM/window.atob
  * https://developer.mozilla.org/en/DOM/window.btoa
  *
- * window.btoa and base64.encode takes a string where charCodeAt is [0,255]
+ * window.btoa and encode takes a string where charCodeAt is [0,255]
  * If any character is not [0,255], then an DOMException(5) is thrown.
  *
- * window.atob and base64.decode take a base64-encoded string
+ * window.atob and decode take a base64-encoded string
  * If the input length is not a multiple of 4, or contains invalid characters
  *   then an DOMException(5) is thrown.
  */
-const base64 = {};
-base64.PADCHAR = "=";
-base64.ALPHA =
+const PADCHAR = "=";
+const ALPHA =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-base64.makeDOMException = function() {
+function makeDOMException() {
   // sadly in FF,Safari,Chrome you can't make a DOMException
   try {
     return new DOMException(DOMException.INVALID_CHARACTER_ERR);
@@ -70,23 +69,22 @@ base64.makeDOMException = function() {
     };
     return ex;
   }
-};
+}
 
-base64.getbyte64 = function(s, i) {
+function getbyte64(s, i) {
   // This is oddly fast, except on Chrome/V8.
   //  Minimal or no improvement in performance by using a
   //   object with properties mapping chars to value (eg. 'A': 0)
-  const idx = base64.ALPHA.indexOf(s.charAt(i));
+  const idx = ALPHA.indexOf(s.charAt(i));
   if (idx === -1) {
-    throw base64.makeDOMException();
+    throw makeDOMException();
   }
   return idx;
-};
+}
 
-base64.decode = function(s) {
+export function decode(s) {
   // convert to string
   s = "" + s;
-  const getbyte64 = base64.getbyte64;
   let pads, i, b10;
   let imax = s.length;
   if (imax === 0) {
@@ -94,13 +92,13 @@ base64.decode = function(s) {
   }
 
   if (imax % 4 !== 0) {
-    throw base64.makeDOMException();
+    throw makeDOMException();
   }
 
   pads = 0;
-  if (s.charAt(imax - 1) === base64.PADCHAR) {
+  if (s.charAt(imax - 1) === PADCHAR) {
     pads = 1;
-    if (s.charAt(imax - 2) === base64.PADCHAR) {
+    if (s.charAt(imax - 2) === PADCHAR) {
       pads = 2;
     }
     // either way, we want to ignore this last block
@@ -131,24 +129,20 @@ base64.decode = function(s) {
       break;
   }
   return x.join("");
-};
+}
 
-base64.getbyte = function(s, i) {
+function getbyte(s, i) {
   const x = s.charCodeAt(i);
   if (x > 255) {
-    throw base64.makeDOMException();
+    throw makeDOMException();
   }
   return x;
-};
+}
 
-base64.encode = function(s) {
+export function encode(s) {
   if (arguments.length !== 1) {
     throw new SyntaxError("Not enough arguments");
   }
-  const padchar = base64.PADCHAR;
-  const alpha = base64.ALPHA;
-  const getbyte = base64.getbyte;
-
   let i, b10;
   const x = [];
 
@@ -162,30 +156,30 @@ base64.encode = function(s) {
   }
   for (i = 0; i < imax; i += 3) {
     b10 = (getbyte(s, i) << 16) | (getbyte(s, i + 1) << 8) | getbyte(s, i + 2);
-    x.push(alpha.charAt(b10 >> 18));
-    x.push(alpha.charAt((b10 >> 12) & 0x3f));
-    x.push(alpha.charAt((b10 >> 6) & 0x3f));
-    x.push(alpha.charAt(b10 & 0x3f));
+    x.push(ALPHA.charAt(b10 >> 18));
+    x.push(ALPHA.charAt((b10 >> 12) & 0x3f));
+    x.push(ALPHA.charAt((b10 >> 6) & 0x3f));
+    x.push(ALPHA.charAt(b10 & 0x3f));
   }
   switch (s.length - imax) {
     case 1:
       b10 = getbyte(s, i) << 16;
       x.push(
-        alpha.charAt(b10 >> 18) +
-          alpha.charAt((b10 >> 12) & 0x3f) +
-          padchar +
-          padchar
+        ALPHA.charAt(b10 >> 18) +
+          ALPHA.charAt((b10 >> 12) & 0x3f) +
+          PADCHAR +
+          PADCHAR
       );
       break;
     case 2:
       b10 = (getbyte(s, i) << 16) | (getbyte(s, i + 1) << 8);
       x.push(
-        alpha.charAt(b10 >> 18) +
-          alpha.charAt((b10 >> 12) & 0x3f) +
-          alpha.charAt((b10 >> 6) & 0x3f) +
-          padchar
+        ALPHA.charAt(b10 >> 18) +
+          ALPHA.charAt((b10 >> 12) & 0x3f) +
+          ALPHA.charAt((b10 >> 6) & 0x3f) +
+          PADCHAR
       );
       break;
   }
   return x.join("");
-};
+}

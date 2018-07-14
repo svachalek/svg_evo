@@ -42,7 +42,7 @@ let timeoutImage = null;
 let timeoutOpacity = null;
 
 function scaleImages() {
-  let border = parseInt(
+  const border = parseInt(
     document.defaultView.getComputedStyle(source).borderLeftWidth ||
       source.currentStyle.borderWidth
   );
