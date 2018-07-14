@@ -15,6 +15,8 @@ export default class Painting {
   constructor(shapes) {
     this.shapes = shapes != null ? shapes : [new Shape()];
     this.score = 1 / 0;
+    this.maturity = 0;
+    this.age = 0;
   }
 
   paint(canvas, opaque) {
@@ -85,6 +87,7 @@ export default class Painting {
 
   mutate() {
     const child = new Painting(this.shapes.slice(0));
+    child.maturity = this.maturity;
     const roll = between(0, 99);
     if (roll < 1 && this.shapes.length > 1) {
       attempt("remove-shape");
@@ -107,15 +110,10 @@ export default class Painting {
   }
 
   cross(other) {
-    const len = Math.min(this.shapes.length, other.shapes.length);
-    const i = between(1, len - 2);
-    const j = between(i + 1, len - 1);
-    let shapes = this.shapes
-      .slice(0, i)
-      .concat(other.shapes.slice(i, j))
-      .concat(this.shapes.slice(j));
+    const these = this.shapes.slice(0, between(Math.floor(this.shapes.length * .4), Math.ceil(this.shapes.length * .6)));
+    const those = other.shapes.slice(between(Math.floor(other.shapes.length * .4), Math.ceil(other.shapes.length * .6)), other.shapes.length);
     attempt("crossover");
-    return new Painting(shapes);
+    return new Painting([...these, ...those]);
   }
 
   svg() {

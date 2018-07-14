@@ -4,7 +4,7 @@ import Point from "./Point.js";
 import Painting, { paintingBaseSize } from "./Painting.js";
 import Shape from "./Shape.js";
 import Color from "./Color.js";
-import { between } from "./math.js";
+import { between, selectRandom } from "./math.js";
 import {
   failure,
   success,
@@ -18,11 +18,14 @@ import {
 } from "./stats.js";
 import { generateWeightMap, paintWeightMap } from "./weightMap.js";
 
-const testScale = 1;
-const generationKeep = 4;
-const generationMutate = 16;
-const generationCross = 1;
-const storageKey = "paintings";
+const UPDATE_FREQUENCY = 10;
+const SAVE_FREQUENCY = 100;
+const TEST_SCALE = 1;
+const GENERATION_KEEP = 4;
+const GENERATION_MUTATE = 16;
+const GENERATION_CROSS = 1;
+const STORAGE_KEY = "paintings";
+
 let imageSource = null;
 let target = null;
 let targetData = null;
@@ -32,10 +35,6 @@ let paintings = [];
 const survivorBoxes = [];
 const mutantBoxes = [];
 const crossBoxes = [];
-
-function randomPainting() {
-  return between(0, paintings.length - 1);
-}
 
 function setText(element, text) {
   element.innerText = element.textContent = text;
@@ -71,7 +70,7 @@ function mutate() {
     1,
     5 - Math.floor(Math.log(generationNumber) / Math.LN10)
   );
-  for (let i = 0; i < generationMutate; ++i) {
+  for (let i = 0; i < GENERATION_MUTATE; ++i) {
     const n = i % paintings.length;
     const parent = paintings[n];
     let child = parent;
@@ -90,18 +89,17 @@ function mutate() {
 }
 
 function crossover() {
-  for (let i = 0; i < generationCross; i++) {
-    const m = randomPainting();
-    let d = randomPainting();
-    while (m === d) {
-      d = randomPainting();
+  for (let i = 0; i < GENERATION_CROSS; i++) {
+    const mom = selectRandom(paintings);
+    let dad = selectRandom(paintings);
+    while (mom === dad) {
+      dad = selectRandom(paintings);
     }
-    const mom = paintings[m];
-    const dad = paintings[d];
     const child = mom.cross(dad);
     child.show(crossBoxes[i], targetData);
     if (child.score < mom.score && child.score < dad.score) {
-      paintings[mom.score < dad.score ? d : m] = child;
+      const replace = mom.score < dad.score ? mom : dad;
+      paintings = paintings.map(p => p === replace ? child : p);
       success();
     } else {
       failure();
@@ -123,9 +121,6 @@ function breed() {
     onSvgImproved();
   }
   onGenerationComplete();
-  if (generationNumber % 100 === 0) {
-    sessionStorage.setItem(storageKey, JSON.stringify(paintings, stringifier));
-  }
   incrementTime(Date.now() - startTime);
   setTimeout(breed, 0);
 }
@@ -133,7 +128,7 @@ function breed() {
 function restart() {
   resetStats();
   paintings = [];
-  for (let i = 0; i < generationKeep; ++i) {
+  for (let i = 0; i < GENERATION_KEEP; ++i) {
     paintings.push(new Painting());
   }
 }
@@ -177,8 +172,8 @@ function scalePaintings() {
     );
     Painting.width = paintingBaseSize;
   }
-  target.width = Painting.width * testScale;
-  target.height = Painting.height * testScale;
+  target.width = Painting.width * TEST_SCALE;
+  target.height = Painting.height * TEST_SCALE;
   const ctx = target.getContext("2d");
   ctx.drawImage(imageSource, 0, 0, target.width, target.height);
   targetData = ctx.getImageData(0, 0, target.width, target.height).data;
@@ -192,21 +187,20 @@ function scalePaintings() {
 window.addEventListener("load", () => {
   const boxesElement = document.getElementById("boxes");
   target = document.getElementById("target");
-  for (let i = 0; i < generationKeep; ++i) {
+  for (let i = 0; i < GENERATION_KEEP; ++i) {
     const box = createBox("survivor", "Survivor");
     boxesElement.appendChild(box);
     survivorBoxes.push(box);
-    box.dataIndex = i;
     box.addEventListener("click", () => {
-      showIndex = this.dataIndex;
+      showIndex = i;
     });
   }
-  for (let i = 0; i < generationMutate; ++i) {
+  for (let i = 0; i < GENERATION_MUTATE; ++i) {
     const box = createBox("mutant", "Mutation");
     boxesElement.appendChild(box);
     mutantBoxes.push(box);
   }
-  for (let i = 0; i < generationCross; ++i) {
+  for (let i = 0; i < GENERATION_CROSS; ++i) {
     const box = createBox("crossover", "Crossover");
     boxesElement.appendChild(box);
     crossBoxes.push(box);
@@ -214,10 +208,10 @@ window.addEventListener("load", () => {
   imageSource = new Image();
   imageSource.addEventListener("load", () => {
     scalePaintings();
-    if (window.__proto__ && sessionStorage.getItem(storageKey)) {
-      paintings = JSON.parse(sessionStorage.getItem(storageKey), reviver)
+    if (window.__proto__ && sessionStorage.getItem(STORAGE_KEY)) {
+      paintings = JSON.parse(sessionStorage.getItem(STORAGE_KEY), reviver)
         .concat(paintings)
-        .slice(0, generationKeep);
+        .slice(0, GENERATION_KEEP);
       resetStats();
     } else {
       restart();
@@ -227,8 +221,6 @@ window.addEventListener("load", () => {
 });
 
 let improved = true;
-
-const updateFrequency = 10;
 
 window.addEventListener("load", () => {
   imageSource.onError = () => {
@@ -314,9 +306,10 @@ function onSvgImproved() {
 
 function onGenerationComplete() {
   paintings.forEach(painting => {
-    painting.age = (painting.age || 0) + 1;
+    ++painting.age;
+    ++painting.maturity;
   });
-  if (improved || generationNumber % updateFrequency === 0) {
+  if (improved || generationNumber % UPDATE_FREQUENCY === 0) {
     paintings.forEach((painting, index) =>
       painting.show(survivorBoxes[index], targetData)
     );
@@ -346,5 +339,8 @@ function onGenerationComplete() {
         `${fraction} (${percent})`
       );
     });
+  }
+  if (generationNumber % SAVE_FREQUENCY === 0) {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(paintings, stringifier));
   }
 }

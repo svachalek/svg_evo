@@ -28,3 +28,8 @@ export function clamp(min, n, max) {
 export function plusOrMinus(min, max) {
   return Math.random() < 0.5 ? between(min, max) : -between(min, max);
 }
+
+export function selectRandom(array) {
+  return array[between(0, array.length - 1)];
+}
+

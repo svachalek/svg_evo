@@ -35,6 +35,6 @@ export default class Shape {
   cost() {
     // base cost on complexity plus a bit of fixed cost which increases with lower alpha
     // in order to discourage blending when it can be avoided
-    return this.path.cost() + 3 / this.color.a;
+    return this.path.cost() + 1 / this.color.a;
   }
 }
