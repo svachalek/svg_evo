@@ -2,7 +2,7 @@ import { between, clamp, plusOrMinus, randomByte } from "./math.js";
 import { attempt } from "./stats.js";
 
 const ALPHA_MIN = 30;
-const ALPHA_MAX = 60;
+const ALPHA_MAX = 100;
 
 export default class Color {
   constructor(r, g, b, a) {

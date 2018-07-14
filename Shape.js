@@ -14,6 +14,7 @@ export default class Shape {
     this.path.paint(ctx);
     ctx.fill();
   }
+
   mutate() {
     const roll = between(0, 5);
     const child = new Shape(this.color, this.path);
@@ -24,12 +25,16 @@ export default class Shape {
     }
     return child;
   }
+
   svg() {
     return (
       "<path fill='" + this.color.fillStyle + "' d='" + this.path.svg() + "'/>"
     );
   }
+
   cost() {
-    return this.path.cost() + 4;
+    // base cost on complexity plus a bit of fixed cost which increases with lower alpha
+    // in order to discourage blending when it can be avoided
+    return this.path.cost() + 3 / this.color.a;
   }
 }
