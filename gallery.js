@@ -20,10 +20,6 @@ const images = [
     svg: "GrandCanyon-140k.svg"
   },
   {
-    o: "images/Lenna.jpg",
-    svg: "Lenna-120k.svg"
-  },
-  {
     o: "images/Flowers.jpg",
     svg: "Flowers-87k.svg"
   },
